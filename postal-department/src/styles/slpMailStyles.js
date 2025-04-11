@@ -5,6 +5,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "white",
   },
+  scrollContainer: {
+    flexGrow: 1, // Allows content to be scrollable
+    paddingBottom: 20, // Prevents content from being cut off at the bottom
+  },
   content: {
     flex: 1,
     backgroundColor: "white",

@@ -1,118 +1,142 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
   View,
-  TouchableOpacity,
   Text,
   StyleSheet,
-  Button,
+  TouchableOpacity,
+  Alert,
   ActivityIndicator,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import styles from "../styles/BarcodeScannerModalStyles";
 
 const BarcodeScannerModal = ({ visible, onClose, onScan }) => {
-  const [camPermissionStatus, requestCamPermission] = useCameraPermissions();
-  const cameraRef = useRef(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const [facing, setFacing] = useState("back");
   const [scanned, setScanned] = useState(false);
-  const [isCameraReady, setIsCameraReady] = useState(false);
-
-  useEffect(() => {
-    const requestPermissions = async () => {
-      if (!camPermissionStatus?.granted) {
-        const { granted } = await requestCamPermission();
-        console.log("Camera permission granted:", granted);
-      }
-    };
-    requestPermissions();
-  }, [camPermissionStatus]);
+  const cameraRef = useRef(null);
 
   useEffect(() => {
     if (visible) {
-      setScanned(false);
+      setScanned(false); // Reset when modal is opened
     }
   }, [visible]);
 
-  const handleBarCodeScanned = (scanData) => {
+  if (!permission) return <View />;
+
+  if (!permission.granted) {
+    return (
+      <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+        <View style={styles.permissionContainer}>
+          <Text style={styles.permissionText}>
+            We need your permission to access the camera
+          </Text>
+          <TouchableOpacity style={styles.button} onPress={requestPermission}>
+            <Text style={styles.buttonText}>Grant Permission</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    );
+  }
+
+  const handleScan = ({ data, type }) => {
     if (!scanned) {
-      const { type, data } = scanData;
-      console.log(`Barcode scanned! Type: ${type}, Data: ${data}`);
       setScanned(true);
-      if (onScan) {
-        console.log("Passing scanned data to parent:", data);
-        onScan(data);
-      }
+      console.log("Scanned:", data);
+
+      if (onScan) onScan(data);
+      else Alert.alert("Scanned Data", `${data}`);
+
+      setTimeout(() => setScanned(false), 2000);
     }
   };
 
-  const handleCameraReady = () => {
-    console.log("Camera is ready and waiting for barcode...");
-    setIsCameraReady(true);
+  const toggleCameraFacing = () => {
+    setFacing((prev) => (prev === "back" ? "front" : "back"));
   };
-
-  const handleScanAgain = () => {
-    setScanned(false);
-  };
-
-  if (camPermissionStatus?.granted === false) {
-    return <Text>No access to camera</Text>;
-  }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false}>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
-        {camPermissionStatus?.granted && (
-          <CameraView
-            style={StyleSheet.absoluteFillObject}
-            ref={cameraRef}
-            onCameraReady={handleCameraReady}
-            barCodeScannerSettings={{
-              barCodeTypes: [
-                "qr",
-                "ean13",
-                "ean8",
-                "upc_a",
-                "upc_e",
-                "code128",
-                "code39",
-                "code93",
-                "itf14",
-                "pdf417",
-                "aztec",
-                "datamatrix",
-              ],
-            }}
-            onBarCodeScanned={scanned ? undefined : handleBarCodeScanned} // Only scan if not already scanned
-          />
-        )}
-
-        {!isCameraReady && <ActivityIndicator size="large" color="#0000ff" />}
-
-        {/* Scanner Overlay */}
-        <View style={styles.overlay}>
-          <View style={styles.topOverlay} />
-          <View style={styles.middleContainer}>
-            <View style={styles.sideOverlay} />
-            <View style={styles.scannerBorder}>
-              <Text style={styles.scanText}>
-                Align the barcode within the frame
-              </Text>
-            </View>
-            <View style={styles.sideOverlay} />
+        <CameraView
+          ref={cameraRef}
+          style={styles.camera}
+          facing={facing}
+          onBarcodeScanned={handleScan}
+          barcodeScannerSettings={{
+            barcodeTypes: [
+              "qr",
+              "ean13",
+              "ean8",
+              "upc_a",
+              "upc_e",
+              "code39",
+              "code128",
+            ],
+          }}
+        >
+          <View style={styles.overlay}>
+            <View style={styles.scanArea} />
           </View>
-          <View style={styles.bottomOverlay} />
-        </View>
-
-        <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-
-        {scanned && <Button title={"Scan Again"} onPress={handleScanAgain} />}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+              <Text style={styles.buttonText}>Flip Camera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={onClose}>
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </CameraView>
       </View>
     </Modal>
   );
 };
 
-
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  permissionText: {
+    textAlign: "center",
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  camera: { flex: 1 },
+  overlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scanArea: {
+    width: 250,
+    height: 250,
+    borderWidth: 2,
+    borderColor: "white",
+    borderRadius: 10,
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: 30,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "center",
+    alignSelf: "center",
+  },
+  button: {
+    backgroundColor: "black",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginHorizontal: 10,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+  },
+});
 
 export default BarcodeScannerModal;

@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
 import { Camera } from "expo-camera";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import FormInput from "../components/FormInput";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import styles from "../styles/smsacceptanceStyles";
-import { sendSms } from "../utils/sendSms"; // Import SMS function
+import { sendSms } from "../utils/sendSms";
 
 const SMSAcceptanceForm = () => {
   const initialFormState = {
@@ -34,12 +27,20 @@ const SMSAcceptanceForm = () => {
     requestCameraPermission();
   }, []);
 
-  const handleBarCodeScanned = ({ type, data }) => {
-    setScanning(false);
-    if (data) {
-      setFormData((prevData) => ({ ...prevData, barcodeNo: data }));
+  const handleBarCodeScanned = (data) => {
+    console.log("SCANNED IN ACCEPTANCE FORM:", data); // Log the scanned data
+    if (!scanning) return; // If scanning is not active, return early
+    setScanning(false); // Close the scanner modal after scan
+
+    const trimmedData = data?.trim(); // Trim any excess whitespace from scanned data
+    if (trimmedData) {
+      updateFormField("barcodeNo", trimmedData); // Update the barcode field
+      Alert.alert("Success", "Barcode scanned successfully."); // Success alert
     } else {
-      Alert.alert("Error", "Invalid barcode scanned!");
+      Alert.alert(
+        "Invalid Scan",
+        "The scanned barcode is invalid. Please try again." // Error alert
+      );
     }
   };
 
@@ -47,47 +48,43 @@ const SMSAcceptanceForm = () => {
     setFormData((prevData) => {
       const updatedData = { ...prevData, [name]: value };
 
-      // Automatically calculate amount when weight changes
       if (name === "weight") {
         const weight = parseFloat(value);
         if (!isNaN(weight)) {
           let calculatedAmount = 0;
-
-          // Define the price ranges based on weight
           if (weight <= 100) {
-            calculatedAmount = weight * 2; // Price per gram for 0-100g
+            calculatedAmount = weight * 2;
           } else if (weight <= 500) {
-            calculatedAmount = weight * 1.8; // Price per gram for 101-500g
+            calculatedAmount = weight * 1.8;
           } else if (weight <= 1000) {
-            calculatedAmount = weight * 1.5; // Price per gram for 501-1000g
+            calculatedAmount = weight * 1.5;
           } else {
-            calculatedAmount = weight * 1.2; // Price per gram for 1001g and above
+            calculatedAmount = weight * 1.2;
           }
-
-          updatedData.amount = calculatedAmount.toFixed(2); // Set the amount
+          updatedData.amount = calculatedAmount.toFixed(2);
         }
       }
-
       return updatedData;
     });
   };
 
-  const handleSendSms = async () => {
-    const { receiverName, weight, amount, barcodeNo } = formData;
-
-    if (!receiverName || !weight || !amount || !barcodeNo) {
+  const handleSubmit = async () => {
+    if (
+      !formData.barcodeNo ||
+      !formData.receiverName ||
+      !formData.weight ||
+      !formData.amount
+    ) {
       Alert.alert("Error", "All fields are required!");
       return;
     }
 
-    // Ensure weight and amount are numbers
-    if (isNaN(weight) || isNaN(amount)) {
-      Alert.alert("Error", "Weight and Amount must be numeric!");
-      return;
-    }
-
-    // Send SMS using the defined function
-    await sendSms(barcodeNo, receiverName, weight, amount);
+    await sendSms(
+      formData.barcodeNo,
+      formData.receiverName,
+      formData.weight,
+      formData.amount
+    );
   };
 
   return (
@@ -102,13 +99,13 @@ const SMSAcceptanceForm = () => {
           <FormInput
             label="Barcode No"
             name="barcodeNo"
-            value={formData.barcodeNo.toUpperCase()} // Display in uppercase
+            value={formData.barcodeNo.toUpperCase()}
             onChange={updateFormField}
           />
         </View>
 
         <TouchableOpacity onPress={() => setScanning(true)}>
-          <MaterialCommunityIcons name="qrcode-scan" size={30} color="black" />
+          <MaterialCommunityIcons name="barcode-scan" size={30} color="black" />
         </TouchableOpacity>
       </View>
 
@@ -133,10 +130,10 @@ const SMSAcceptanceForm = () => {
         value={formData.amount}
         onChange={updateFormField}
         keyboardType="numeric"
-        editable={false} // Prevent manual editing of amount
+        editable={false}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSendSms}>
+      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Send SMS</Text>
       </TouchableOpacity>
 

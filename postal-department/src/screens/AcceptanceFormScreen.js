@@ -26,26 +26,33 @@ const AcceptanceForm = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [scanning, setScanning] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
-  const [cameraRef, setCameraRef] = useState(null);
-
-  const [type, setType] = useState(Camera?.Constants?.Type?.back || "back");
 
   useEffect(() => {
     const requestCameraPermission = async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      console.log("Camera permission status:", status); // Log the status
+      console.log("Camera permission status:", status);
       setHasPermission(status === "granted");
     };
     requestCameraPermission();
   }, []);
 
-  const handleBarCodeScanned = ({ type, data }) => {
+  const formatFieldName = (field) =>
+    field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
+
+  const handleBarCodeScanned = (data) => {
+    console.log("SCANNED IN ACCEPTANCE FORM:", data);
+    if (!scanning) return;
     setScanning(false);
-    // Ensure data is not empty before updating
-    if (data) {
-      updateFormField("barcodeNo", data);
+
+    const trimmedData = data?.trim();
+    if (trimmedData) {
+      updateFormField("barcodeNo", trimmedData);
+      Alert.alert("Success", "Barcode scanned successfully.");
     } else {
-      Alert.alert("Error", "Invalid barcode scanned!");
+      Alert.alert(
+        "Invalid Scan",
+        "The scanned barcode is invalid. Please try again."
+      );
     }
   };
 
@@ -53,7 +60,6 @@ const AcceptanceForm = () => {
     setFormData((prevData) => {
       let updatedData = { ...prevData, [name]: value };
 
-      // Check if weight is a valid number before calculating postage
       if (name === "weight" || name === "companyType") {
         const weightValue = parseFloat(updatedData.weight);
         updatedData.postage = !isNaN(weightValue)
@@ -85,8 +91,8 @@ const AcceptanceForm = () => {
     const missingField = requiredFields.find((field) => !formData[field]);
     if (missingField) {
       Alert.alert(
-        "Error",
-        `${missingField.replace(/([A-Z])/g, " $1")} is required!`
+        "Missing Field",
+        `${formatFieldName(missingField)} is required.`
       );
       return;
     }
@@ -106,14 +112,21 @@ const AcceptanceForm = () => {
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      Alert.alert("Error", "Failed to submit form. Please try again.");
+
+      if (error.response && error.response.data && error.response.data.error) {
+        Alert.alert("Submission Error", error.response.data.error);
+      } else if (error.message.includes("Network Error")) {
+        Alert.alert("Network Error", "Please check your internet connection.");
+      } else {
+        Alert.alert("Error", "Something went wrong. Please try again later.");
+      }
     }
   };
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }} // Ensures ScrollView grows with content
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
     >
       {[
         { label: "Sender Name", name: "senderName" },
@@ -163,7 +176,7 @@ const AcceptanceForm = () => {
         </View>
 
         <TouchableOpacity onPress={() => setScanning(true)}>
-          <MaterialCommunityIcons name="qrcode-scan" size={30} color="black" />
+          <MaterialCommunityIcons name="barcode-scan" size={30} color="black" />
         </TouchableOpacity>
       </View>
 

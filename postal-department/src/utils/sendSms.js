@@ -3,16 +3,19 @@ import { Alert } from "react-native";
 
 export const sendSms = async (barcode, receiverName, weight, amount) => {
   try {
-    // Ensure fields are properly formatted
-    if (!barcode || !receiverName || !weight || !amount) {
-      Alert.alert("Error", "All fields are required!");
+    let message = "";
+    const phoneNumber = "1919"; // PEC SMS Gateway
+
+    if (barcode && receiverName && weight && amount) {
+      // Format message for full details
+      message = `pec slpa ${barcode} ${receiverName} ${weight} ${amount}`;
+    } else if (barcode) {
+      // Format message when only barcode is provided
+      message = `pec slpa ${barcode}`;
+    } else {
+      Alert.alert("Error", "Barcode number is required!");
       return;
     }
-
-    // Format message as required by 1919 gateway
-    const message = `PEC SLPA ${barcode} ${receiverName} ${weight}g Rs.${amount}`;
-
-    const phoneNumber = "1919"; // PEC SMS Gateway
 
     // Check if SMS is available
     const isAvailable = await SMS.isAvailableAsync();

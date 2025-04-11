@@ -13,7 +13,7 @@ const BarcodeInput = ({ barcode, setBarcode, onTrack, onScan }) => {
     <View style={styles.container}>
       <Text style={styles.label}>Enter Barcode</Text>
       <TouchableOpacity onPress={onScan} style={styles.cameraIcon}>
-        <MaterialCommunityIcons name="qrcode-scan" size={24} color="black" />
+        <MaterialCommunityIcons name="barcode-scan" size={24} color="black" />
       </TouchableOpacity>
 
       <View style={styles.inputRow}>
