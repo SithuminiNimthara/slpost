@@ -11,18 +11,13 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     setIsLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("username", username);
-      formData.append("password", password);
-
       const response = await axios.post(
         "https://slpmail.slpost.gov.lk/appapi/appuser.php",
-        formData,
+        { username: username, password: password }, // Send as JSON
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
           },
-          transformRequest: (data) => data, // Required for React Native/Axios[4]
         }
       );
 
