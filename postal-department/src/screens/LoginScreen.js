@@ -14,6 +14,7 @@ const Login = () => {
       setError("Please enter username and password");
       return;
     }
+    
     setError(""); // Clear error before attempting login
     login(username, password);
   };
