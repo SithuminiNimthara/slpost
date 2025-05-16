@@ -2,6 +2,8 @@ import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    overflow: "auto",
     backgroundColor: "#f4f4f4",
     padding: 15,
   },
