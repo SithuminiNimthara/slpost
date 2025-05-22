@@ -40,20 +40,17 @@ const AcceptanceForm = () => {
     field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
 
   const handleBarCodeScanned = (data) => {
-    console.log("SCANNED IN ACCEPTANCE FORM:", data);
     if (!scanning) return;
-    setScanning(false);
 
     const trimmedData = data?.trim();
     if (trimmedData) {
       updateFormField("barcodeNo", trimmedData);
       Alert.alert("Success", "Barcode scanned successfully.");
     } else {
-      Alert.alert(
-        "Invalid Scan",
-        "The scanned barcode is invalid. Please try again."
-      );
+      Alert.alert("Invalid Scan", "The scanned barcode is invalid. Please try again.");
     }
+
+    setScanning(false); // Close the scanner after handling
   };
 
   const updateFormField = (name, value) => {
@@ -62,12 +59,15 @@ const AcceptanceForm = () => {
 
       if (name === "weight" || name === "companyType") {
         const weightValue = parseFloat(updatedData.weight);
-        updatedData.postage = !isNaN(weightValue)
-          ? updatedData.companyType === "government_department" &&
-            weightValue === 30
-            ? "150"
-            : calculatePostage(weightValue).toFixed(2)
-          : "";
+        const companyType = updatedData.companyType;
+
+        const postageAmount =
+          !isNaN(weightValue) && weightValue > 0
+            ? calculatePostage(weightValue, companyType)
+            : null;
+
+        updatedData.postage =
+          postageAmount !== null ? postageAmount.toFixed(2) : "";
       }
 
       return updatedData;
@@ -90,31 +90,33 @@ const AcceptanceForm = () => {
 
     const missingField = requiredFields.find((field) => !formData[field]);
     if (missingField) {
-      Alert.alert(
-        "Missing Field",
-        `${formatFieldName(missingField)} is required.`
-      );
+      Alert.alert("Missing Field", `${formatFieldName(missingField)} is required.`);
       return;
     }
 
     try {
       console.log("Submitting Form:", formData);
+
       const response = await axios.post(
-        "http://192.168.1.40:5000/api/acceptance/store",
-        formData
+        "https://slpmail.slpost.gov.lk/appapi/appaccept.php",
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
-      if (response.status === 201) {
+      if (response.status === 200 && response.data?.success) {
         Alert.alert("Success", "Form submitted successfully!");
         setFormData(initialFormState);
       } else {
-        Alert.alert("Error", response.data.error || "Something went wrong");
+        Alert.alert("Error", response.data?.message || "Submission failed.");
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-
-      if (error.response && error.response.data && error.response.data.error) {
-        Alert.alert("Submission Error", error.response.data.error);
+      if (error.response?.data?.message) {
+        Alert.alert("Submission Error", error.response.data.message);
       } else if (error.message.includes("Network Error")) {
         Alert.alert("Network Error", "Please check your internet connection.");
       } else {
@@ -158,6 +160,7 @@ const AcceptanceForm = () => {
         onChange={updateFormField}
         keyboardType="numeric"
       />
+
       <FormInput
         label="Postage (Rs)"
         name="postage"
@@ -172,6 +175,7 @@ const AcceptanceForm = () => {
             name="barcodeNo"
             value={formData.barcodeNo}
             onChange={updateFormField}
+            keyboardType="default"
           />
         </View>
 

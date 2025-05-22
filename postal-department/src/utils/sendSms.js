@@ -1,4 +1,4 @@
-import * as SMS from "expo-sms";
+import { SendDirectSms } from "react-native-send-direct-sms";
 import { Alert } from "react-native";
 
 export const sendSms = async (barcode, receiverName, weight, amount) => {
@@ -6,36 +6,36 @@ export const sendSms = async (barcode, receiverName, weight, amount) => {
     let message = "";
     const phoneNumber = "1919"; // PEC SMS Gateway
 
-    if (barcode && receiverName && weight && amount) {
-      // Format message for full details
-      message = `pec slpa ${barcode} ${receiverName} ${weight} ${amount}`;
-    } else if (barcode) {
-      // Format message when only barcode is provided
-      message = `pec slpa ${barcode}`;
-    } else {
+    // Validate barcode input
+    if (!barcode) {
       Alert.alert("Error", "Barcode number is required!");
       return;
     }
 
-    // Check if SMS is available
-    const isAvailable = await SMS.isAvailableAsync();
-    if (!isAvailable) {
-      Alert.alert("Error", "SMS service is not available on this device.");
-      return;
-    }
-
-    // Send SMS
-    const { result } = await SMS.sendSMSAsync([phoneNumber], message, {
-      allowAndroidSendWithoutReadPermission: true,
-    });
-
-    if (result === "sent") {
-      Alert.alert("Success", "SMS sent successfully!");
+    // Format message based on provided details
+    if (receiverName && weight && amount) {
+      message = `pec slpa ${barcode} ${receiverName} ${weight} ${amount}`;
     } else {
-      Alert.alert("Cancelled", "SMS sending was cancelled.");
+      message = `pec slpa ${barcode}`;
     }
+
+    console.log("Calling SendDirectSms now...");
+
+    // Send SMS directly
+    SendDirectSms(
+      phoneNumber,
+      message,
+      (success) => {
+        console.log("SMS Sent?", success);
+        Alert.alert("Success", "SMS sent directly!");
+      },
+      (error) => {
+        console.error("SMS Error Callback:", error);
+        Alert.alert("Failed", "SMS sending failed.");
+      }
+    );
   } catch (error) {
-    console.error("Error sending SMS:", error.message);
+    console.error("Error sending SMS:", error);
     Alert.alert("Error", "Failed to send SMS. Please try again.");
   }
 };

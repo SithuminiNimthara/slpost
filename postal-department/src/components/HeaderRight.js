@@ -1,25 +1,40 @@
 import React, { useContext } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Platform,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native"; // ✅ added
 import { AuthContext } from "../context/AuthContext";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 const HeaderRight = () => {
   const { user, logout } = useContext(AuthContext);
+  const navigation = useNavigation(); // ✅ added
+
   if (!user) return null;
 
   const handleLogout = () => {
-    console.log("Logout Alert opened");
-    Alert.alert("Logout", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: () => {
-          console.log("Logout confirmed");
-          logout();
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to log out?");
+      if (confirmed) {
+        logout();
+      }
+    } else {
+      Alert.alert("Logout", "Are you sure you want to log out?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   return (

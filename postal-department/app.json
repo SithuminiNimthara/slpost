@@ -7,9 +7,7 @@
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "permissions": [
-      "CAMERA"
-    ],
+    "permissions": ["CAMERA"],
     "splash": {
       "image": "./src//assets/splash-icon.png",
       "resizeMode": "contain",
@@ -25,6 +23,7 @@
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",
+        "SEND_SMS",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],

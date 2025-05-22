@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  PermissionsAndroid,
+  Platform,
+} from "react-native";
 import { Camera } from "expo-camera";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import FormInput from "../components/FormInput";
@@ -7,7 +15,30 @@ import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import styles from "../styles/smsacceptanceStyles";
 import { sendSms } from "../utils/sendSms";
 
-const SMSAcceptanceForm = () => {
+// Request SMS permission on Android
+const requestSmsPermission = async () => {
+  if (Platform.OS === "android") {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.SEND_SMS,
+        {
+          title: "SMS Permission",
+          message: "This app needs permission to send SMS messages.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn("Permission error:", err);
+      return false;
+    }
+  }
+  return true;
+};
+
+const SMSAcceptanceForm = ({ username, locationName }) => {
   const initialFormState = {
     receiverName: "",
     weight: "",
@@ -28,19 +59,15 @@ const SMSAcceptanceForm = () => {
   }, []);
 
   const handleBarCodeScanned = (data) => {
-    console.log("SCANNED IN ACCEPTANCE FORM:", data); // Log the scanned data
-    if (!scanning) return; // If scanning is not active, return early
-    setScanning(false); // Close the scanner modal after scan
+    if (!scanning) return;
+    setScanning(false);
 
-    const trimmedData = data?.trim(); // Trim any excess whitespace from scanned data
+    const trimmedData = data?.trim();
     if (trimmedData) {
-      updateFormField("barcodeNo", trimmedData); // Update the barcode field
-      Alert.alert("Success", "Barcode scanned successfully."); // Success alert
+      updateFormField("barcodeNo", trimmedData);
+      Alert.alert("Success", "Barcode scanned successfully.");
     } else {
-      Alert.alert(
-        "Invalid Scan",
-        "The scanned barcode is invalid. Please try again." // Error alert
-      );
+      Alert.alert("Invalid Scan", "The scanned barcode is invalid.");
     }
   };
 
@@ -52,18 +79,15 @@ const SMSAcceptanceForm = () => {
         const weight = parseFloat(value);
         if (!isNaN(weight)) {
           let calculatedAmount = 0;
-          if (weight <= 100) {
-            calculatedAmount = weight * 2;
-          } else if (weight <= 500) {
-            calculatedAmount = weight * 1.8;
-          } else if (weight <= 1000) {
-            calculatedAmount = weight * 1.5;
-          } else {
-            calculatedAmount = weight * 1.2;
-          }
+          if (weight <= 100) calculatedAmount = weight * 2;
+          else if (weight <= 500) calculatedAmount = weight * 1.8;
+          else if (weight <= 1000) calculatedAmount = weight * 1.5;
+          else calculatedAmount = weight * 1.2;
+
           updatedData.amount = calculatedAmount.toFixed(2);
         }
       }
+
       return updatedData;
     });
   };
@@ -79,12 +103,29 @@ const SMSAcceptanceForm = () => {
       return;
     }
 
-    await sendSms(
+    const hasPermission = await requestSmsPermission();
+    if (!hasPermission) {
+      Alert.alert("Permission Denied", "SMS permission is required.");
+      return;
+    }
+
+    const success = await sendSms(
       formData.barcodeNo,
       formData.receiverName,
       formData.weight,
-      formData.amount
+      formData.amount,
+      username,
+      locationName
     );
+
+    if (success) {
+      Alert.alert("Success", "SMS sent successfully!", [
+        {
+          text: "OK",
+          onPress: () => setFormData(initialFormState),
+        },
+      ]);
+    }
   };
 
   return (

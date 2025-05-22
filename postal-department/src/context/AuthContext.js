@@ -17,45 +17,70 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     setIsLoading(true);
+
     try {
-      const response = await axios.post(
-        "https://slpmail.slpost.gov.lk/appapi/appuser.php",
-        { username, password },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      const data = response.data;
-
-      if (data.Status === "Success") {
-        // Store all user data
-        const userData = {
-          User_id: data.User_id,
-          Name: data.Name,
-          Location: data.Location,
-          Location_id: data.Location_id,
-          privilege: data.privilege,
+      if (username === "testuser") {
+        // Dummy user logic
+        const testUserData = {
+          User_id: "123",
+          Name: "Test User",
+          Location: "Test City",
+          Location_id: "000",
+          privilege: "test",
         };
-        await AsyncStorage.setItem("user_data", JSON.stringify(userData));
-        setUser(userData);
-        alert(`Success\n${JSON.stringify(data, null, 2)}`);
-      } else if (data.Status === "Error" && data.Error === "Invalid username") {
-        setUser(null);
-        alert("Invalid username");
-      } else if (
-        data.Status === "Error" &&
-        data.Error === "Invalid Usrename or Password"
-      ) {
-        setUser(null);
-        alert("Invalid username or password");
+        await AsyncStorage.setItem("user_data", JSON.stringify(testUserData));
+        setUser(testUserData);
+
+        alert(
+          `Login Successful!\n\nUser ID: ${testUserData.User_id}\nName: ${testUserData.Name}\nLocation: ${testUserData.Location}\nLocation ID: ${testUserData.Location_id}\nPrivilege: ${testUserData.privilege}`
+        );
       } else {
-        setUser(null);
-        alert("Login failed. Please try again.");
+        // Real API login logic
+        const response = await axios.post(
+          "https://slpmail.slpost.gov.lk/appapi/appuser.php",
+          { username, password },
+          { headers: { "Content-Type": "application/json" } }
+        );
+
+        const data = response.data;
+
+        if (data.Status === "Success") {
+          const userData = {
+            User_id: data.User_id,
+            Name: data.Name,
+            Location: data.Location,
+            Location_id: data.Location_id,
+            privilege: data.privilege,
+          };
+          await AsyncStorage.setItem("user_data", JSON.stringify(userData));
+          setUser(userData);
+
+          alert(
+            `Login Successful!\n\nUser ID: ${userData.User_id}\nName: ${userData.Name}\nLocation: ${userData.Location}\nLocation ID: ${userData.Location_id}\nPrivilege: ${userData.privilege}`
+          );
+        } else if (
+          data.Status === "Error" &&
+          data.Error === "Invalid username"
+        ) {
+          setUser(null);
+          alert("Invalid username");
+        } else if (
+          data.Status === "Error" &&
+          data.Error === "Invalid Usrename or Password"
+        ) {
+          setUser(null);
+          alert("Invalid username or password");
+        } else {
+          setUser(null);
+          alert("Login failed. Please try again.");
+        }
       }
     } catch (error) {
       setUser(null);
       alert("Network or server error. Please try again.");
-      console.error(error);
+      console.error("Login Error:", error);
     }
+
     setIsLoading(false);
   };
 
