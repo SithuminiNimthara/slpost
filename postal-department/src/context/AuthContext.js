@@ -37,7 +37,8 @@ export const AuthProvider = ({ children }) => {
       } else {
         // Real API login logic
         const response = await axios.post(
-          "https://slpmail.slpost.gov.lk/appapi/appuser.php",
+          //"https://slpmail.slpost.gov.lk/appapi/appuser.php",
+          "https://ec.slpost.gov.lk/slpmail/forwardUser.php",
           { username, password },
           { headers: { "Content-Type": "application/json" } }
         );
