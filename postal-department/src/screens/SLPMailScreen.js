@@ -23,10 +23,6 @@ const SLPMail = ({ navigation }) => {
               <Text style={styles.gridText}>Acceptance</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-              <FontAwesome5 name="file-alt" size={24} color="#9C1D1D" />
-              <Text style={styles.gridText}>Mark Receive</Text>
-            </TouchableOpacity>
             <TouchableOpacity
               style={styles.gridItem}
               onPress={() => navigation.navigate("TrackItem")}
@@ -34,21 +30,26 @@ const SLPMail = ({ navigation }) => {
               <FontAwesome5 name="map-marker-alt" size={24} color="#9C1D1D" />
               <Text style={styles.gridText}>Tracking</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridItem}
+              onPress={() => navigation.navigate("Delivery")}
+            >
+              <FontAwesome5 name="truck" size={24} color="#9C1D1D" />
+              <Text style={styles.gridText}>Delivery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridItem}
+              onPress={() => navigation.navigate("Undelivery")}
+            >
+              <FontAwesome5 name="times-circle" size={24} color="#9C1D1D" />
+              <Text style={styles.gridText}>Undelivery</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
               <FontAwesome5 name="chart-bar" size={24} color="#9C1D1D" />
               <Text style={styles.gridText}>Report</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-              <FontAwesome5 name="shipping-fast" size={24} color="#9C1D1D" />
-              <Text style={styles.gridText}>Dispatch</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-              <FontAwesome5 name="route" size={24} color="#9C1D1D" />
-              <Text style={styles.gridText}>Add Beat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-              <FontAwesome5 name="truck" size={24} color="#9C1D1D" />
-              <Text style={styles.gridText}>Delivery</Text>
             </TouchableOpacity>
           </View>
 
@@ -74,9 +75,17 @@ const SLPMail = ({ navigation }) => {
             </TouchableOpacity>
             <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
               <FontAwesome5 name="map-marked-alt" size={24} color="#9C1D1D" />
-              <Text style={styles.gridText}>SMS Tracking</Text>
+              <Text
+                style={styles.gridText}
+                onPress={() => navigation.navigate("SMSTracking")}
+              >
+                SMS Tracking
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
+            <TouchableOpacity
+              style={styles.gridItem}
+              onPress={() => navigation.navigate("SMSReport")}
+            >
               <FontAwesome5 name="file-invoice" size={24} color="#9C1D1D" />
               <Text style={styles.gridText}>SMS Report</Text>
             </TouchableOpacity>

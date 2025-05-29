@@ -7,7 +7,11 @@ import AcceptanceForm from "../screens/AcceptanceFormScreen";
 import SMSAcceptance from "../screens/SMSAcceptanceScreen";
 import SMSDelivery from "../screens/SMSDeliveryScreen";
 import Settings from "../screens/SettingScreen";
-import HeaderRight from "../components/HeaderRight"; // Adjust path as needed
+import HeaderRight from "../components/HeaderRight";
+import SMSTracking from "../screens/SMSTrackingScreen";
+import SMSReport from "../screens/SMSReportScreen";
+import Delivery from "../screens/DeliveryScreen";
+import Undelivery from "../screens/UndeliveryScreen";
 
 const Stack = createStackNavigator();
 
@@ -53,6 +57,24 @@ export default function AppStack() {
           headerRight: () => <HeaderRight />,
         }}
       />
+
+      <Stack.Screen
+        name="Delivery"
+        component={Delivery}
+        options={{
+          title: "Delivery",
+          headerRight: () => <HeaderRight />,
+        }}
+      />
+
+      <Stack.Screen
+        name="Undelivery"
+        component={Undelivery}
+        options={{
+          title: "Undelivery",
+          headerRight: () => <HeaderRight />,
+        }}
+      />
       <Stack.Screen
         name="SMSAcceptance"
         component={SMSAcceptance}
@@ -69,6 +91,19 @@ export default function AppStack() {
           headerRight: () => <HeaderRight />,
         }}
       />
+
+      <Stack.Screen
+        name="SMSTracking"
+        component={SMSTracking}
+        options={{ title: "SMS Tracking", headerRight: () => <HeaderRight /> }}
+      />
+
+      <Stack.Screen
+        name="SMSReport"
+        component={SMSReport}
+        options={{ title: "SMS Report", headerRight: () => <HeaderRight /> }}
+      />
+
       <Stack.Screen
         name="Settings"
         component={Settings}
