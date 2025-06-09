@@ -1,4 +1,4 @@
-export const calculatePostage = (weight, companyType) => {
+export const calculatePostage = (weight, company_type) => {
   // Ensure weight is a valid number
   if (typeof weight !== "number" || isNaN(weight) || weight <= 0) return null;
 
@@ -6,7 +6,7 @@ export const calculatePostage = (weight, companyType) => {
   if (weight > 40000) return null;
 
   // Special Case: Government Department (Flat Rate for ≤30g)
-  if (companyType === "Government Department" && weight <= 30) {
+  if (company_type === "Government Department" && weight <= 30) {
     return 150.0;
   }
 

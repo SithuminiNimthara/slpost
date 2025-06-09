@@ -15,7 +15,11 @@ const SMSDelivery = () => {
       return;
     }
     // Call the SMS function with the barcode number
-    await sendSms(formData.barcodeNo);
+    await sendSms("slpd", {
+      barcode: formData.barcodeNo,
+      username,
+      locationName,
+    });
   };
 
   const handleBarCodeScanned = (data) => {
@@ -30,7 +34,10 @@ const SMSDelivery = () => {
       setFormData((prevData) => ({ ...prevData, barcodeNo: trimmedData })); // Update the barcode field
       Alert.alert("Success", "Barcode scanned successfully."); // Success alert
     } else {
-      Alert.alert("Invalid Scan", "The scanned barcode is invalid. Please try again."); // Error alert
+      Alert.alert(
+        "Invalid Scan",
+        "The scanned barcode is invalid. Please try again."
+      ); // Error alert
     }
   };
 

@@ -47,7 +47,10 @@ const SLPMail = ({ navigation }) => {
               <Text style={styles.gridText}>Undelivery</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
+            <TouchableOpacity
+              style={styles.gridItem}
+              onPress={() => navigation.navigate("Report")}
+            >
               <FontAwesome5 name="chart-bar" size={24} color="#9C1D1D" />
               <Text style={styles.gridText}>Report</Text>
             </TouchableOpacity>

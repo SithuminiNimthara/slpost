@@ -12,6 +12,7 @@ import SMSTracking from "../screens/SMSTrackingScreen";
 import SMSReport from "../screens/SMSReportScreen";
 import Delivery from "../screens/DeliveryScreen";
 import Undelivery from "../screens/UndeliveryScreen";
+import Report from "../screens/ReportScreen";
 
 const Stack = createStackNavigator();
 
@@ -75,6 +76,16 @@ export default function AppStack() {
           headerRight: () => <HeaderRight />,
         }}
       />
+
+      <Stack.Screen
+        name="Report"
+        component={Report}
+        options={{
+          title: "Report",
+          headerRight: () => <HeaderRight />,
+        }}
+      />
+
       <Stack.Screen
         name="SMSAcceptance"
         component={SMSAcceptance}

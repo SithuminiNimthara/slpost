@@ -1,105 +1,165 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Alert, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
 import { Camera } from "expo-camera";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { calculatePostage } from "../utils/calculatePostage";
 import FormInput from "../components/FormInput";
 import DropdownInput from "../components/DropdownInput";
 import styles from "../styles/acceptanceFormStyles";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 
-const AcceptanceForm = () => {
-  const initialFormState = {
-    senderName: "",
-    receiverName: "",
-    address1: "",
-    address2: "",
-    city1: "",
-    city2: "",
-    companyType: "Normal",
-    weight: "",
-    postage: "",
-    barcodeNo: "",
-  };
+const formFields = [
+  { label: "Sender Name", name: "sender_name" },
+  { label: "Receiver Name", name: "receiver_name" },
+  { label: "Contact No", name: "contact_no" },
+  { label: "Address 1", name: "address_l1" },
+  { label: "City 1", name: "city_1" },
+  { label: "Address 2", name: "address_l2" },
+  { label: "City 2", name: "city_2" },
+];
 
+const initialFormState = {
+  sender_name: "",
+  receiver_name: "",
+  contact_no: "",
+  address_l1: "",
+  address_l2: "",
+  city_1: "",
+  city_2: "",
+  company_type: "Normal",
+  weight: "",
+  amount: "",
+  barcode: "",
+};
+
+const AcceptanceForm = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [scanning, setScanning] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
+  const [userId, setUserId] = useState("");
+  const [locationId, setLocationId] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const requestCameraPermission = async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      console.log("Camera permission status:", status);
       setHasPermission(status === "granted");
     };
+
+    const loadUser = async () => {
+      const userData = await AsyncStorage.getItem("user_data");
+      if (userData) {
+        const user = JSON.parse(userData);
+        setUserId(user.User_id || "");
+        setLocationId(user.Location_id || user.Location || "");
+      }
+    };
+
     requestCameraPermission();
+    loadUser();
   }, []);
+
+  useEffect(() => {
+    const weightValue = parseFloat(formData.weight);
+    if (!isNaN(weightValue) && weightValue > 0) {
+      const amount = calculatePostage(weightValue, formData.company_type);
+      setFormData((prev) => ({
+        ...prev,
+        amount: amount.toFixed(2),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        amount: "",
+      }));
+    }
+  }, [formData.weight, formData.company_type]);
+
+  const updateFormField = (name, value) => {
+    if (name === "contact_no") {
+      // Remove non-digit characters
+      value = value.replace(/\D/g, "").slice(0, 10); // Allow max 10 digits
+    }
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
 
   const formatFieldName = (field) =>
     field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
 
   const handleBarCodeScanned = (data) => {
     if (!scanning) return;
+    setScanning(false);
 
     const trimmedData = data?.trim();
     if (trimmedData) {
-      updateFormField("barcodeNo", trimmedData);
+      updateFormField("barcode", trimmedData);
       Alert.alert("Success", "Barcode scanned successfully.");
     } else {
-      Alert.alert("Invalid Scan", "The scanned barcode is invalid. Please try again.");
+      Alert.alert(
+        "Invalid Scan",
+        "The scanned barcode is invalid. Please try again."
+      );
     }
-
-    setScanning(false); // Close the scanner after handling
-  };
-
-  const updateFormField = (name, value) => {
-    setFormData((prevData) => {
-      let updatedData = { ...prevData, [name]: value };
-
-      if (name === "weight" || name === "companyType") {
-        const weightValue = parseFloat(updatedData.weight);
-        const companyType = updatedData.companyType;
-
-        const postageAmount =
-          !isNaN(weightValue) && weightValue > 0
-            ? calculatePostage(weightValue, companyType)
-            : null;
-
-        updatedData.postage =
-          postageAmount !== null ? postageAmount.toFixed(2) : "";
-      }
-
-      return updatedData;
-    });
   };
 
   const handleSubmit = async () => {
     const requiredFields = [
-      "senderName",
-      "receiverName",
-      "address1",
-      "city1",
-      "address2",
-      "city2",
-      "companyType",
+      "sender_name",
+      "receiver_name",
+      "contact_no",
+      "address_l1",
+      "city_1",
+      "address_l2",
+      "city_2",
+      "company_type",
       "weight",
-      "postage",
-      "barcodeNo",
+      "amount",
+      "barcode",
     ];
 
     const missingField = requiredFields.find((field) => !formData[field]);
     if (missingField) {
-      Alert.alert("Missing Field", `${formatFieldName(missingField)} is required.`);
+      Alert.alert(
+        "Missing Field",
+        `${formatFieldName(missingField)} is required.`
+      );
       return;
     }
 
+    if (!userId || !locationId) {
+      Alert.alert(
+        "Error",
+        "User ID or Location ID not found. Please log in again."
+      );
+      return;
+    }
+
+    setLoading(true);
     try {
-      console.log("Submitting Form:", formData);
+      const payload = {
+        user_id: userId,
+        office_id: locationId,
+        ...formData,
+      };
 
       const response = await axios.post(
-        "https://slpmail.slpost.gov.lk/appapi/appaccept.php",
-        formData,
+        "https://ec.slpost.gov.lk/slpmail/forwardAccept.php",
+        payload,
         {
           headers: {
             "Content-Type": "application/json",
@@ -107,14 +167,31 @@ const AcceptanceForm = () => {
         }
       );
 
-      if (response.status === 200 && response.data?.success) {
-        Alert.alert("Success", "Form submitted successfully!");
+      if (response.status === 200 && response.data?.Status === "Success") {
+        const {
+          ReceiptNumber,
+          Barcode,
+          Passcode,
+          Weight,
+          "Amount Rs.": AmountRs,
+        } = response.data;
+
+        Alert.alert(
+          "Form Submitted Successfully",
+          `Receipt No: ${ReceiptNumber}\nBarcode: ${Barcode}\nPasscode: ${Passcode}\nWeight: ${Weight}g\nAmount: Rs. ${AmountRs}`
+        );
+
         setFormData(initialFormState);
       } else {
         Alert.alert("Error", response.data?.message || "Submission failed.");
+        console.error("Form submission failed. Response:", response.data);
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("Submission Error:", {
+        message: error.message,
+        data: error.response?.data,
+      });
+
       if (error.response?.data?.message) {
         Alert.alert("Submission Error", error.response.data.message);
       } else if (error.message.includes("Network Error")) {
@@ -122,78 +199,90 @@ const AcceptanceForm = () => {
       } else {
         Alert.alert("Error", "Something went wrong. Please try again later.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {[
-        { label: "Sender Name", name: "senderName" },
-        { label: "Receiver Name", name: "receiverName" },
-        { label: "Address 1", name: "address1" },
-        { label: "City 1", name: "city1" },
-        { label: "Address 2", name: "address2" },
-        { label: "City 2", name: "city2" },
-      ].map(({ label, name }) => (
-        <FormInput
-          key={name}
-          label={label}
-          name={name}
-          value={formData[name]}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+      >
+        {formFields.map(({ label, name }) => (
+          <FormInput
+            key={name}
+            label={label}
+            name={name}
+            value={formData[name]}
+            onChange={updateFormField}
+          />
+        ))}
+
+        <DropdownInput
+          name="company_type"
+          value={formData.company_type}
           onChange={updateFormField}
         />
-      ))}
 
-      <DropdownInput
-        name="companyType"
-        value={formData.companyType}
-        onChange={updateFormField}
-      />
+        <FormInput
+          label="Weight (grams)"
+          name="weight"
+          value={formData.weight}
+          onChange={updateFormField}
+          keyboardType="numeric"
+        />
 
-      <FormInput
-        label="Weight (grams)"
-        name="weight"
-        value={formData.weight}
-        onChange={updateFormField}
-        keyboardType="numeric"
-      />
+        <FormInput
+          label="Postage (Rs)"
+          name="amount"
+          value={formData.amount}
+          readOnly
+        />
 
-      <FormInput
-        label="Postage (Rs)"
-        name="postage"
-        value={formData.postage}
-        readOnly
-      />
+        <View style={styles.barcodeContainer}>
+          <View style={{ flex: 1, marginRight: 20 }}>
+            <FormInput
+              label="Barcode No"
+              name="barcode"
+              value={formData.barcode}
+              onChange={updateFormField}
+              keyboardType="default"
+            />
+          </View>
 
-      <View style={styles.barcodeContainer}>
-        <View style={{ flex: 1, marginRight: 20 }}>
-          <FormInput
-            label="Barcode No"
-            name="barcodeNo"
-            value={formData.barcodeNo}
-            onChange={updateFormField}
-            keyboardType="default"
-          />
+          <TouchableOpacity onPress={() => setScanning(true)}>
+            <MaterialCommunityIcons
+              name="barcode-scan"
+              size={30}
+              color="black"
+            />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={() => setScanning(true)}>
-          <MaterialCommunityIcons name="barcode-scan" size={30} color="black" />
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.7 }]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Store</Text>
+          )}
         </TouchableOpacity>
-      </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Store</Text>
-      </TouchableOpacity>
-
-      <BarcodeScannerModal
-        visible={scanning}
-        onClose={() => setScanning(false)}
-        onScan={handleBarCodeScanned}
-      />
-    </ScrollView>
+        <BarcodeScannerModal
+          visible={scanning}
+          onClose={() => setScanning(false)}
+          onScan={handleBarCodeScanned}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

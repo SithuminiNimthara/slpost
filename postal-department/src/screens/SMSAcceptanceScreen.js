@@ -14,6 +14,7 @@ import FormInput from "../components/FormInput";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import styles from "../styles/smsacceptanceStyles";
 import { sendSms } from "../utils/sendSms";
+import { calculatePostage } from "../utils/calculatePostage";
 
 // Request SMS permission on Android
 const requestSmsPermission = async () => {
@@ -77,14 +78,20 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
 
       if (name === "weight") {
         const weight = parseFloat(value);
-        if (!isNaN(weight)) {
-          let calculatedAmount = 0;
-          if (weight <= 100) calculatedAmount = weight * 2;
-          else if (weight <= 500) calculatedAmount = weight * 1.8;
-          else if (weight <= 1000) calculatedAmount = weight * 1.5;
-          else calculatedAmount = weight * 1.2;
 
-          updatedData.amount = calculatedAmount.toFixed(2);
+        if (!isNaN(weight)) {
+          if (weight > 40000) {
+            Alert.alert("Error", "Maximum allowed weight is 40kg.");
+            updatedData.amount = "";
+          } else if (weight > 0) {
+            const postage = calculatePostage(weight);
+            updatedData.amount =
+              postage && postage !== "Invalid weight" ? postage.toString() : "";
+          } else {
+            updatedData.amount = "";
+          }
+        } else {
+          updatedData.amount = "";
         }
       }
 
@@ -93,6 +100,8 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
   };
 
   const handleSubmit = async () => {
+    const weight = parseFloat(formData.weight);
+
     if (
       !formData.barcodeNo ||
       !formData.receiverName ||
@@ -103,20 +112,25 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
       return;
     }
 
+    if (isNaN(weight) || weight <= 0 || weight > 40000) {
+      Alert.alert("Error", "Weight must be between 1g and 40000g.");
+      return;
+    }
+
     const hasPermission = await requestSmsPermission();
     if (!hasPermission) {
       Alert.alert("Permission Denied", "SMS permission is required.");
       return;
     }
 
-    const success = await sendSms(
-      formData.barcodeNo,
-      formData.receiverName,
-      formData.weight,
-      formData.amount,
+    const success = await sendSms("slpa", {
+      barcode: formData.barcodeNo,
+      receiverName: formData.receiverName,
+      weight: formData.weight,
+      amount: formData.amount,
       username,
-      locationName
-    );
+      locationName,
+    });
 
     if (success) {
       Alert.alert("Success", "SMS sent successfully!", [
