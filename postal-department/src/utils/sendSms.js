@@ -19,14 +19,20 @@ const requestSmsPermission = async () => {
  * Parses SMS response for tracking (slpt) or delivery (slpd)
  */
 const parseResponse = (message) => {
-  const pattern = /slp[td]\s+(\w+)\s+status[:\-]?\s*(\w+)\s+location[:\-]?\s*(\w+)/i;
-  const match = message.match(pattern);
-  if (match) {
-    return {
-      barcode: match[1],
-      status: match[2],
-      location: match[3],
-    };
+  const patterns = [
+    /slpa\s+(\w+).+?accepted\s+at\s+([\w\s-]+)/i,
+    /slpd\s+(\w+).+?delivered\s+at\s+([\w\s-]+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.body.match(pattern);
+    if (match) {
+      return {
+        barcode: match[1],
+        location: match[2].trim(),
+        fullMessage: message.body,
+      };
+    }
   }
   return null;
 };
@@ -54,11 +60,14 @@ export const sendSms = async (type, params = {}) => {
     case "slpd": {
       const { barcode, deliveryOfficer, receiverSignature } = params;
       if (!barcode || !deliveryOfficer || !receiverSignature) {
-        Alert.alert("Error", "Barcode, Delivery Officer, and Receiver Signature are required.");
+        Alert.alert(
+          "Error",
+          "Barcode, User Name, and Location Name are required."
+        );
         return;
       }
-      const formattedSignature = receiverSignature.trim().replace(/\s+/g, "_");
       const formattedOfficer = deliveryOfficer.trim().replace(/\s+/g, "_");
+      const formattedSignature = receiverSignature.trim().replace(/\s+/g, "_");
       message = `pec slpd ${barcode} ${formattedOfficer} ${formattedSignature}`;
       break;
     }
@@ -117,7 +126,7 @@ export const sendSms = async (type, params = {}) => {
       return;
   }
 
-  // SMS types that expect a response (slpa, slpt, slpd)
+  // SMS types that expect a response
   return new Promise((resolve, reject) => {
     let listener;
     try {
@@ -141,14 +150,13 @@ export const sendSms = async (type, params = {}) => {
         (error) => {
           console.error("SMS send failed:", error);
           Alert.alert("Failed", "SMS sending failed.");
-          listener.remove();
+          listener?.remove();
           reject(error);
         }
       );
 
-      // Timeout fallback
       setTimeout(() => {
-        listener.remove();
+        listener?.remove();
         reject(new Error("SMS response timeout"));
       }, 10000);
     } catch (error) {

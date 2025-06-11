@@ -122,23 +122,31 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
       Alert.alert("Permission Denied", "SMS permission is required.");
       return;
     }
+    try {
+      const response = await sendSms("slpa", {
+        barcode: formData.barcodeNo,
+        receiverName: formData.receiverName,
+        weight: formData.weight,
+        amount: formData.amount,
+        username,
+        locationName,
+      });
 
-    const success = await sendSms("slpa", {
-      barcode: formData.barcodeNo,
-      receiverName: formData.receiverName,
-      weight: formData.weight,
-      amount: formData.amount,
-      username,
-      locationName,
-    });
-
-    if (success) {
-      Alert.alert("Success", "SMS sent successfully!", [
-        {
-          text: "OK",
-          onPress: () => setFormData(initialFormState),
-        },
-      ]);
+      if (response) {
+        Alert.alert(
+          "Success",
+          response.fullMessage ||
+            `${response.barcode} successfully accepted\nat ${response.location}`,
+          [
+            {
+              text: "OK",
+              onPress: () => setFormData(initialFormState),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to send SMS details.");
     }
   };
 

@@ -25,13 +25,12 @@ const SMSReportScreen = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [datePickerMode, setDatePickerMode] = useState(""); // "date" | "start" | "end"
+  const [datePickerMode, setDatePickerMode] = useState("");
   const [loading, setLoading] = useState(false);
   const [smsResponse, setSmsResponse] = useState("");
   const smsListenerRef = useRef(null);
 
   useEffect(() => {
-    // Clean up SMS listener on unmount
     return () => {
       if (smsListenerRef.current) {
         smsListenerRef.current.remove();
@@ -39,42 +38,27 @@ const SMSReportScreen = () => {
     };
   }, []);
 
-  // Listen for SMS response after sending
-  const listenForSms = (
-    expectedType,
-    expectedDate,
-    expectedStart,
-    expectedEnd
-  ) => {
+  const listenForSms = (expectedType, expectedDate, expectedStart, expectedEnd) => {
     if (smsListenerRef.current) {
       smsListenerRef.current.remove();
     }
     smsListenerRef.current = SmsListener.addListener((sms) => {
-      // Only accept SMS from 1919
       if (sms.originatingAddress === "1919") {
-        // Match response type
-        if (
-          expectedType === "daily" &&
-          sms.body.toLowerCase().includes("slpr")
-        ) {
+        const body = sms.body.toLowerCase();
+
+        if (expectedType === "daily" && body.includes("slpr")) {
           setSmsResponse(sms.body);
           smsListenerRef.current.remove();
         } else if (
           expectedType === "date" &&
-          sms.body
-            .toLowerCase()
-            .includes(moment(expectedDate).format("YYYY-MM-DD"))
+          body.includes(moment(expectedDate).format("YYYY-MM-DD"))
         ) {
           setSmsResponse(sms.body);
           smsListenerRef.current.remove();
         } else if (
           expectedType === "range" &&
-          sms.body
-            .toLowerCase()
-            .includes(moment(expectedStart).format("YYYY-MM-DD")) &&
-          sms.body
-            .toLowerCase()
-            .includes(moment(expectedEnd).format("YYYY-MM-DD"))
+          body.includes(moment(expectedStart).format("YYYY-MM-DD")) &&
+          body.includes(moment(expectedEnd).format("YYYY-MM-DD"))
         ) {
           setSmsResponse(sms.body);
           smsListenerRef.current.remove();
@@ -108,11 +92,8 @@ const SMSReportScreen = () => {
     };
 
     try {
-      // Listen for SMS before sending (to avoid missing a fast reply)
       listenForSms(selectedType, date, startDate, endDate);
-
       await sendSms("slpr", payload);
-
       setSmsResponse("Report SMS sent successfully. Waiting for reply...");
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to send SMS");
@@ -134,43 +115,25 @@ const SMSReportScreen = () => {
             onPress={() => setSelectedType(type.key)}
           >
             <View style={styles.checkBox}>
-              {selectedType === type.key && (
-                <View style={styles.checkBoxChecked} />
-              )}
+              {selectedType === type.key && <View style={styles.checkBoxChecked} />}
             </View>
             <Text style={styles.checkBoxLabel}>{type.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Date pickers */}
       {selectedType === "date" && (
-        <TouchableOpacity
-          onPress={() => openPicker("date")}
-          style={styles.dateButton}
-        >
-          <Text style={styles.dateText}>
-            Date: {moment(date).format("YYYY-MM-DD")}
-          </Text>
+        <TouchableOpacity onPress={() => openPicker("date")} style={styles.dateButton}>
+          <Text style={styles.dateText}>Date: {moment(date).format("YYYY-MM-DD")}</Text>
         </TouchableOpacity>
       )}
       {selectedType === "range" && (
         <>
-          <TouchableOpacity
-            onPress={() => openPicker("start")}
-            style={styles.dateButton}
-          >
-            <Text style={styles.dateText}>
-              Start Date: {moment(startDate).format("YYYY-MM-DD")}
-            </Text>
+          <TouchableOpacity onPress={() => openPicker("start")} style={styles.dateButton}>
+            <Text style={styles.dateText}>Start: {moment(startDate).format("YYYY-MM-DD")}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => openPicker("end")}
-            style={styles.dateButton}
-          >
-            <Text style={styles.dateText}>
-              End Date: {moment(endDate).format("YYYY-MM-DD")}
-            </Text>
+          <TouchableOpacity onPress={() => openPicker("end")} style={styles.dateButton}>
+            <Text style={styles.dateText}>End: {moment(endDate).format("YYYY-MM-DD")}</Text>
           </TouchableOpacity>
         </>
       )}
@@ -195,11 +158,7 @@ const SMSReportScreen = () => {
         onPress={handleSubmit}
         disabled={loading}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.submitButtonText}>Submit</Text>
-        )}
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Submit</Text>}
       </TouchableOpacity>
 
       {smsResponse ? (

@@ -5,7 +5,7 @@ import { sendSms } from "../utils/sendSms"; // Import the SMS function
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import styles from "../styles/smsdeliveryStyles";
 
-const SMSDelivery = () => {
+const SMSDelivery = ({ username, locationName }) => {
   const [formData, setFormData] = useState({ barcodeNo: "" });
   const [scanning, setScanning] = useState(false);
 
@@ -15,11 +15,18 @@ const SMSDelivery = () => {
       return;
     }
     // Call the SMS function with the barcode number
-    await sendSms("slpd", {
-      barcode: formData.barcodeNo,
-      username,
-      locationName,
-    });
+    try {
+      const response = await sendSms("slpd", {
+        barcode: formData.barcodeNo,
+        deliveryOfficer: username,
+        receiverSignature: locationName,
+      });
+      console.log("SMS Sent and Response Parsed:", response);
+      Alert.alert("Success", "Delivery SMS sent successfully.");
+    } catch (error) {
+      console.error("SMS sending failed:", error);
+      Alert.alert("Failed", "Delivery SMS failed to send.");
+    }
   };
 
   const handleBarCodeScanned = (data) => {
