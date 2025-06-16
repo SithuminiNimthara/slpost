@@ -1,15 +1,15 @@
 const eventMapping = {
-  1: "Receive item from customer",
-  2: "Send item to delivery office",
-  3: "Receive item at delivery office",
-  4: "Item delivered",
-  5: "Item redirected to destination",
-  6: "Handed over to postman",
-  7: "Door closed",
-  8: "Not at this address",
-  9: "Incorrect address",
-  10: "Return to sender",
-  11: "Return to RLO",
+  "Receive item from customer": 1,
+  "Send item to delivery office": 2,
+  "Receive item at delivery office": 3,
+  "Item Delivered": 4,
+  "Item redirected to destination": 5,
+  "Handed over to postman": 6,
+  "Door closed": 7,
+  "Not at this address": 8,
+  "Incorrect address": 9,
+  "Return to sender": 10,
+  "Return to RLO": 11,
 };
 
 export default eventMapping;
