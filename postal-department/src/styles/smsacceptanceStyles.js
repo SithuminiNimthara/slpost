@@ -57,6 +57,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 16,
   },
+  replyContainer: {
+    backgroundColor: "#e1f5fe",
+    padding: 15,
+    marginTop: 20,
+    borderRadius: 10,
+    borderColor: "#0288d1",
+    borderWidth: 1,
+  },
+
+  replyTitle: {
+    fontWeight: "bold",
+    fontSize: 16,
+    color: "#01579b",
+    marginBottom: 10,
+  },
+
+  replyText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#333",
+  },
 });
 
 export default styles;

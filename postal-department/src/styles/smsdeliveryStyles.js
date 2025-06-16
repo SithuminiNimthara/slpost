@@ -48,6 +48,24 @@ const styles = StyleSheet.create({
     marginBottom: 12, // Increased space for error message
     textAlign: "center",
   },
+  replyContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+  },
+
+  replyLabel: {
+    fontWeight: "bold",
+    fontSize: 16,
+    marginBottom: 8,
+  },
+
+  replyText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#333",
+  },
 });
 
 export default styles;

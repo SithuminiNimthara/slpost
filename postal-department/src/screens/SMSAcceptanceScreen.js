@@ -16,7 +16,6 @@ import styles from "../styles/smsacceptanceStyles";
 import { sendSms } from "../utils/sendSms";
 import { calculatePostage } from "../utils/calculatePostage";
 
-// Request SMS permission on Android
 const requestSmsPermission = async () => {
   if (Platform.OS === "android") {
     try {
@@ -50,6 +49,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
   const [formData, setFormData] = useState(initialFormState);
   const [scanning, setScanning] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
+  const [smsReply, setSmsReply] = useState(null);
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -62,6 +62,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
   const handleBarCodeScanned = (data) => {
     if (!scanning) return;
     setScanning(false);
+    setSmsReply(null);
 
     const trimmedData = data?.trim();
     if (trimmedData) {
@@ -75,6 +76,8 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
   const updateFormField = (name, value) => {
     setFormData((prevData) => {
       const updatedData = { ...prevData, [name]: value };
+
+      setSmsReply(null); // Clear previous reply on input change
 
       if (name === "weight") {
         const weight = parseFloat(value);
@@ -122,9 +125,10 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
       Alert.alert("Permission Denied", "SMS permission is required.");
       return;
     }
+
     try {
       const response = await sendSms("slpa", {
-        barcode: formData.barcodeNo,
+        barcode: formData.barcodeNo.toUpperCase(),
         receiverName: formData.receiverName,
         weight: formData.weight,
         amount: formData.amount,
@@ -132,21 +136,24 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
         locationName,
       });
 
-      if (response) {
-        Alert.alert(
-          "Success",
-          response.fullMessage ||
-            `${response.barcode} successfully accepted\nat ${response.location}`,
-          [
-            {
-              text: "OK",
-              onPress: () => setFormData(initialFormState),
-            },
-          ]
-        );
+      console.log("Gateway response:", response);
+
+      if (response && response.barcode && response.location) {
+        setSmsReply(response.fullMessage);
+        Alert.alert("Success", response.fullMessage, [
+          { text: "OK", onPress: () => setFormData(initialFormState) },
+        ]);
+      } else {
+        Alert.alert("Failed", "SMS was not delivered correctly. Try again.");
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to send SMS details.");
+      console.error("SMS Error:", error);
+      if (error.message === "SMS response timeout") {
+        setSmsReply("No response received within 90 seconds.");
+        Alert.alert("Timeout", "No response received within 90 seconds.");
+      } else {
+        Alert.alert("Error", "Something went wrong while sending SMS.");
+      }
     }
   };
 
@@ -162,7 +169,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
           <FormInput
             label="Barcode No"
             name="barcodeNo"
-            value={formData.barcodeNo.toUpperCase()}
+            value={formData.barcodeNo}
             onChange={updateFormField}
           />
         </View>
@@ -199,6 +206,17 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Send SMS</Text>
       </TouchableOpacity>
+
+      {smsReply && (
+        <View style={styles.replyContainer}>
+          <Text style={styles.replyTitle}>Reply from Gateway:</Text>
+          {smsReply.split("\n").map((line, index) => (
+            <Text key={index} style={styles.replyText}>
+              {line.trim()}
+            </Text>
+          ))}
+        </View>
+      )}
 
       <BarcodeScannerModal
         visible={scanning}

@@ -26,7 +26,9 @@ const SmsTrackingScreen = () => {
     setLoading(true);
 
     try {
-      const trackingData = await sendSms("slpt", barcode);
+      const trackingData = await sendSms("slpt", {
+        barcode: barcode.toUpperCase(),
+      });
 
       if (trackingData) {
         setMessages((prev) => [
@@ -78,6 +80,8 @@ const SmsTrackingScreen = () => {
             <Text>Barcode: {item.data.barcode}</Text>
             <Text>Status: {item.data.status}</Text>
             <Text>Location: {item.data.location}</Text>
+            {/* Display the full reply message with line breaks */}
+            <Text style={styles.fullMessage}>{item.data.fullMessage}</Text>
           </View>
         )}
       />
@@ -112,6 +116,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#555",
     marginBottom: 5,
+  },
+  fullMessage: {
+    marginTop: 10,
+    fontSize: 14,
+    color: "#333",
   },
 });
 

@@ -1,50 +1,64 @@
 import React, { useState } from "react";
 import { View, TouchableOpacity, Alert, TextInput, Text } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { sendSms } from "../utils/sendSms"; // Import the SMS function
+import { sendSms, requestSmsPermission } from "../utils/sendSms";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import styles from "../styles/smsdeliveryStyles";
 
 const SMSDelivery = ({ username, locationName }) => {
   const [formData, setFormData] = useState({ barcodeNo: "" });
   const [scanning, setScanning] = useState(false);
+  const [smsReply, setSmsReply] = useState(null); // Store SMS reply
 
   const handleSubmit = async () => {
     if (!formData.barcodeNo) {
       Alert.alert("Error", "Barcode number is required!");
       return;
     }
-    // Call the SMS function with the barcode number
+
     try {
+      const hasPermission = await requestSmsPermission();
+      if (!hasPermission) {
+        Alert.alert("Permission Denied", "SMS permission is required.");
+        return;
+      }
+
       const response = await sendSms("slpd", {
-        barcode: formData.barcodeNo,
-        deliveryOfficer: username,
-        receiverSignature: locationName,
+        barcode: formData.barcodeNo.trim().toUpperCase(),
+        username,
+        locationName,
       });
-      console.log("SMS Sent and Response Parsed:", response);
-      Alert.alert("Success", "Delivery SMS sent successfully.");
+
+      console.log("SMS Delivery Response:", response);
+
+      setSmsReply(response?.fullMessage || "No message received.");
+
+      if (response && response.status === "success") {
+        Alert.alert("Success", "SMS sent. Reply received below.");
+        setFormData({ barcodeNo: "" });
+      } else {
+        Alert.alert("Failed", "SMS was not sent successfully.");
+      }
     } catch (error) {
-      console.error("SMS sending failed:", error);
-      Alert.alert("Failed", "Delivery SMS failed to send.");
+      console.error("Delivery Error:", error);
+      Alert.alert("Error", "Delivery SMS failed to send.");
     }
   };
 
   const handleBarCodeScanned = (data) => {
-    console.log("SCANNED IN DELIVERY FORM:", data); // Log the scanned data
+    if (!scanning) return;
+    setScanning(false);
 
-    if (!scanning) return; // If scanning is not active, return early
-    setScanning(false); // Close the scanner modal after scan
-
-    const trimmedData = data?.trim(); // Trim any excess whitespace from scanned data
+    const trimmedData = data?.trim();
 
     if (trimmedData) {
-      setFormData((prevData) => ({ ...prevData, barcodeNo: trimmedData })); // Update the barcode field
-      Alert.alert("Success", "Barcode scanned successfully."); // Success alert
+      setFormData((prev) => ({ ...prev, barcodeNo: trimmedData }));
+      Alert.alert("Success", "Barcode scanned successfully.");
     } else {
       Alert.alert(
         "Invalid Scan",
         "The scanned barcode is invalid. Please try again."
-      ); // Error alert
+      );
     }
   };
 
@@ -65,6 +79,14 @@ const SMSDelivery = ({ username, locationName }) => {
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Send SMS</Text>
       </TouchableOpacity>
+
+      {/* Display SMS Reply */}
+      {smsReply && (
+        <View style={styles.replyContainer}>
+          <Text style={styles.replyLabel}>Reply Message:</Text>
+          <Text style={styles.replyText}>{smsReply}</Text>
+        </View>
+      )}
 
       <BarcodeScannerModal
         visible={scanning}

@@ -2,8 +2,10 @@ import { Alert, PermissionsAndroid, Platform } from "react-native";
 import { SendDirectSms } from "react-native-send-direct-sms";
 import SmsListener from "react-native-android-sms-listener";
 
+const phoneNumber = "1919";
+
 /**
- * Requests SMS-related permissions on Android.
+ * Requests SMS permissions on Android.
  */
 const requestSmsPermission = async () => {
   if (Platform.OS === "android") {
@@ -16,35 +18,13 @@ const requestSmsPermission = async () => {
 };
 
 /**
- * Parses SMS response for tracking (slpt) or delivery (slpd)
- */
-const parseResponse = (message) => {
-  const patterns = [
-    /slpa\s+(\w+).+?accepted\s+at\s+([\w\s-]+)/i,
-    /slpd\s+(\w+).+?delivered\s+at\s+([\w\s-]+)/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = message.body.match(pattern);
-    if (match) {
-      return {
-        barcode: match[1],
-        location: match[2].trim(),
-        fullMessage: message.body,
-      };
-    }
-  }
-  return null;
-};
-
-/**
- * Main SMS sending function.
+ * Main function to send SMS and receive reply.
  */
 export const sendSms = async (type, params = {}) => {
-  const phoneNumber = "1919";
   await requestSmsPermission();
   let message = "";
 
+  // Construct the SMS based on type
   switch (type) {
     case "slpa": {
       const { barcode, receiverName, weight, amount } = params;
@@ -52,23 +32,18 @@ export const sendSms = async (type, params = {}) => {
         Alert.alert("Error", "Receiver Name, Weight, and Amount are required.");
         return;
       }
-      const formattedReceiverName = receiverName.trim().replace(/\s+/g, "_");
-      message = `pec slpa ${barcode} ${formattedReceiverName} ${weight} ${amount}`;
+      const formattedName = receiverName.trim().replace(/\s+/g, "_");
+      message = `pec slpa ${barcode} ${formattedName} ${weight} ${amount}`;
       break;
     }
 
     case "slpd": {
-      const { barcode, deliveryOfficer, receiverSignature } = params;
-      if (!barcode || !deliveryOfficer || !receiverSignature) {
-        Alert.alert(
-          "Error",
-          "Barcode, User Name, and Location Name are required."
-        );
+      const { barcode } = params;
+      if (!barcode) {
+        Alert.alert("Error", "Barcode is required.");
         return;
       }
-      const formattedOfficer = deliveryOfficer.trim().replace(/\s+/g, "_");
-      const formattedSignature = receiverSignature.trim().replace(/\s+/g, "_");
-      message = `pec slpd ${barcode} ${formattedOfficer} ${formattedSignature}`;
+      message = `pec slpd ${barcode} delivered`;
       break;
     }
 
@@ -84,6 +59,7 @@ export const sendSms = async (type, params = {}) => {
 
     case "slpr": {
       const { reportType, date, startDate, endDate } = params;
+
       if (reportType === "daily") {
         message = "pec slpr";
       } else if (reportType === "date") {
@@ -102,23 +78,7 @@ export const sendSms = async (type, params = {}) => {
         Alert.alert("Error", "Invalid report type.");
         return;
       }
-
-      return new Promise((resolve, reject) => {
-        SendDirectSms(
-          phoneNumber,
-          message,
-          () => {
-            console.log("Report SMS sent successfully");
-            Alert.alert("Success", "Report SMS sent!");
-            resolve(true);
-          },
-          (error) => {
-            console.error("Report SMS send failed:", error);
-            Alert.alert("Failed", "Failed to send report SMS.");
-            reject(error);
-          }
-        );
-      });
+      break;
     }
 
     default:
@@ -126,42 +86,49 @@ export const sendSms = async (type, params = {}) => {
       return;
   }
 
-  // SMS types that expect a response
   return new Promise((resolve, reject) => {
     let listener;
+
     try {
+      // Start listening for SMS replies
       listener = SmsListener.addListener((sms) => {
-        if (
-          sms.originatingAddress === phoneNumber &&
-          sms.body.toLowerCase().includes(params.barcode?.toLowerCase())
-        ) {
-          const parsed = parseResponse(sms.body);
-          if (parsed) {
-            listener.remove();
-            resolve(parsed);
-          }
+        const fromExpectedNumber = sms.originatingAddress.includes("1919");
+
+        if (fromExpectedNumber) {
+          const reply = {
+            fullMessage: sms.body.trim(),
+            timestamp: new Date().toLocaleString(),
+            status: "success",
+          };
+          listener.remove(); // stop listening
+          resolve(reply);
         }
       });
 
+      // Send SMS
       SendDirectSms(
         phoneNumber,
         message,
-        () => console.log("SMS sent successfully"),
+        () => {
+          console.log("SMS sent successfully");
+          Alert.alert("Success", "SMS sent successfully.");
+        },
         (error) => {
-          console.error("SMS send failed:", error);
+          console.error("SMS failed:", error);
           Alert.alert("Failed", "SMS sending failed.");
           listener?.remove();
           reject(error);
         }
       );
 
+      // Timeout after 90 seconds
       setTimeout(() => {
         listener?.remove();
         reject(new Error("SMS response timeout"));
-      }, 10000);
-    } catch (error) {
+      }, 90000);
+    } catch (err) {
       listener?.remove();
-      reject(error);
+      reject(err);
     }
   });
 };

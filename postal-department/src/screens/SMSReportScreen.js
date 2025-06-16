@@ -38,31 +38,17 @@ const SMSReportScreen = () => {
     };
   }, []);
 
-  const listenForSms = (expectedType, expectedDate, expectedStart, expectedEnd) => {
+  const listenForSms = () => {
     if (smsListenerRef.current) {
       smsListenerRef.current.remove();
     }
     smsListenerRef.current = SmsListener.addListener((sms) => {
-      if (sms.originatingAddress === "1919") {
-        const body = sms.body.toLowerCase();
-
-        if (expectedType === "daily" && body.includes("slpr")) {
-          setSmsResponse(sms.body);
-          smsListenerRef.current.remove();
-        } else if (
-          expectedType === "date" &&
-          body.includes(moment(expectedDate).format("YYYY-MM-DD"))
-        ) {
-          setSmsResponse(sms.body);
-          smsListenerRef.current.remove();
-        } else if (
-          expectedType === "range" &&
-          body.includes(moment(expectedStart).format("YYYY-MM-DD")) &&
-          body.includes(moment(expectedEnd).format("YYYY-MM-DD"))
-        ) {
-          setSmsResponse(sms.body);
-          smsListenerRef.current.remove();
-        }
+      if (
+        sms.originatingAddress === "1919" &&
+        sms.body.toLowerCase().includes("slpr")
+      ) {
+        setSmsResponse(sms.body);
+        smsListenerRef.current.remove();
       }
     });
   };
@@ -92,9 +78,12 @@ const SMSReportScreen = () => {
     };
 
     try {
-      listenForSms(selectedType, date, startDate, endDate);
-      await sendSms("slpr", payload);
-      setSmsResponse("Report SMS sent successfully. Waiting for reply...");
+      const response = await sendSms("slpr", payload);
+      if (response && response.fullMessage) {
+        setSmsResponse(response.fullMessage);
+      } else {
+        setSmsResponse("Report SMS sent. Awaiting response...");
+      }
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to send SMS");
     }
@@ -115,7 +104,9 @@ const SMSReportScreen = () => {
             onPress={() => setSelectedType(type.key)}
           >
             <View style={styles.checkBox}>
-              {selectedType === type.key && <View style={styles.checkBoxChecked} />}
+              {selectedType === type.key && (
+                <View style={styles.checkBoxChecked} />
+              )}
             </View>
             <Text style={styles.checkBoxLabel}>{type.label}</Text>
           </TouchableOpacity>
@@ -123,17 +114,32 @@ const SMSReportScreen = () => {
       </View>
 
       {selectedType === "date" && (
-        <TouchableOpacity onPress={() => openPicker("date")} style={styles.dateButton}>
-          <Text style={styles.dateText}>Date: {moment(date).format("YYYY-MM-DD")}</Text>
+        <TouchableOpacity
+          onPress={() => openPicker("date")}
+          style={styles.dateButton}
+        >
+          <Text style={styles.dateText}>
+            Date: {moment(date).format("YYYY-MM-DD")}
+          </Text>
         </TouchableOpacity>
       )}
       {selectedType === "range" && (
         <>
-          <TouchableOpacity onPress={() => openPicker("start")} style={styles.dateButton}>
-            <Text style={styles.dateText}>Start: {moment(startDate).format("YYYY-MM-DD")}</Text>
+          <TouchableOpacity
+            onPress={() => openPicker("start")}
+            style={styles.dateButton}
+          >
+            <Text style={styles.dateText}>
+              Start: {moment(startDate).format("YYYY-MM-DD")}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => openPicker("end")} style={styles.dateButton}>
-            <Text style={styles.dateText}>End: {moment(endDate).format("YYYY-MM-DD")}</Text>
+          <TouchableOpacity
+            onPress={() => openPicker("end")}
+            style={styles.dateButton}
+          >
+            <Text style={styles.dateText}>
+              End: {moment(endDate).format("YYYY-MM-DD")}
+            </Text>
           </TouchableOpacity>
         </>
       )}
@@ -158,7 +164,11 @@ const SMSReportScreen = () => {
         onPress={handleSubmit}
         disabled={loading}
       >
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Submit</Text>}
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.submitButtonText}>Submit</Text>
+        )}
       </TouchableOpacity>
 
       {smsResponse ? (
