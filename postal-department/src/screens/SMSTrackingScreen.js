@@ -17,6 +17,22 @@ const SmsTrackingScreen = () => {
   const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Parse the SMS reply text to extract useful info
+  const parseTrackingSms = (smsText) => {
+    // Example SMS format (adjust regex based on your actual SMS reply format):
+    // "pec slpt ABC123 Status:Delivered Location:Colombo Office"
+    const barcodeMatch = smsText.match(/pec slpt (\S+)/i);
+    const statusMatch = smsText.match(/Status:(\S+)/i);
+    const locationMatch = smsText.match(/Location:(.+)$/i);
+
+    return {
+      barcode: barcodeMatch ? barcodeMatch[1] : "Unknown",
+      status: statusMatch ? statusMatch[1] : "Unknown",
+      location: locationMatch ? locationMatch[1].trim() : "Unknown",
+      fullMessage: smsText,
+    };
+  };
+
   const handleSendTrackingRequest = async () => {
     if (!barcode) {
       Alert.alert("Error", "Please enter or scan a barcode");
@@ -26,17 +42,19 @@ const SmsTrackingScreen = () => {
     setLoading(true);
 
     try {
-      const trackingData = await sendSms("slpt", {
+      const trackingSms = await sendSms("slpt", {
         barcode: barcode.toUpperCase(),
       });
 
-      if (trackingData) {
+      if (trackingSms && trackingSms.fullMessage) {
+        const parsedData = parseTrackingSms(trackingSms.fullMessage);
+
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
             type: "received",
-            data: trackingData,
+            data: parsedData,
             timestamp: new Date().toLocaleString(),
           },
         ]);
@@ -80,7 +98,6 @@ const SmsTrackingScreen = () => {
             <Text>Barcode: {item.data.barcode}</Text>
             <Text>Status: {item.data.status}</Text>
             <Text>Location: {item.data.location}</Text>
-            {/* Display the full reply message with line breaks */}
             <Text style={styles.fullMessage}>{item.data.fullMessage}</Text>
           </View>
         )}
