@@ -10,7 +10,6 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { sendSms } from "../utils/sendSms";
 import moment from "moment";
-import SmsListener from "react-native-android-sms-listener";
 import styles from "../styles/smsreportStyles";
 
 const REPORT_TYPES = [
@@ -28,30 +27,6 @@ const SMSReportScreen = () => {
   const [datePickerMode, setDatePickerMode] = useState("");
   const [loading, setLoading] = useState(false);
   const [smsResponse, setSmsResponse] = useState("");
-  const smsListenerRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (smsListenerRef.current) {
-        smsListenerRef.current.remove();
-      }
-    };
-  }, []);
-
-  const listenForSms = () => {
-    if (smsListenerRef.current) {
-      smsListenerRef.current.remove();
-    }
-    smsListenerRef.current = SmsListener.addListener((sms) => {
-      if (
-        sms.originatingAddress === "1919" &&
-        sms.body.toLowerCase().includes("slpr")
-      ) {
-        setSmsResponse(sms.body);
-        smsListenerRef.current.remove();
-      }
-    });
-  };
 
   const openPicker = (mode) => {
     setDatePickerMode(mode);
@@ -79,13 +54,16 @@ const SMSReportScreen = () => {
 
     try {
       const response = await sendSms("slpr", payload);
-      if (response && response.fullMessage) {
+
+      if (response?.fullMessage) {
         setSmsResponse(response.fullMessage);
+        Alert.alert("Success", "Report received.");
       } else {
         setSmsResponse("Report SMS sent. Awaiting response...");
       }
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to send SMS");
+      setSmsResponse("Failed to send or receive SMS.");
     }
 
     setLoading(false);
@@ -93,6 +71,8 @@ const SMSReportScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>SMS Report</Text>
+
       <View style={styles.checkBoxGroup}>
         {REPORT_TYPES.map((type) => (
           <TouchableOpacity
@@ -123,6 +103,7 @@ const SMSReportScreen = () => {
           </Text>
         </TouchableOpacity>
       )}
+
       {selectedType === "range" && (
         <>
           <TouchableOpacity
@@ -173,8 +154,12 @@ const SMSReportScreen = () => {
 
       {smsResponse ? (
         <View style={styles.responseBox}>
-          <Text style={styles.responseLabel}>Response:</Text>
-          <Text style={styles.responseText}>{smsResponse}</Text>
+          <Text style={styles.responseLabel}>Reply from Gateway:</Text>
+          {smsResponse.split("\n").map((line, index) => (
+            <Text key={index} style={styles.responseText}>
+              {line.trim()}
+            </Text>
+          ))}
         </View>
       ) : null}
     </View>
