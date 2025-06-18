@@ -19,16 +19,7 @@ const SmsTrackingScreen = () => {
 
   // Parse the SMS reply text to extract useful info
   const parseTrackingSms = (smsText) => {
-    // Example SMS format (adjust regex based on your actual SMS reply format):
-    // "pec slpt ABC123 Status:Delivered Location:Colombo Office"
-    const barcodeMatch = smsText.match(/pec slpt (\S+)/i);
-    const statusMatch = smsText.match(/Status:(\S+)/i);
-    const locationMatch = smsText.match(/Location:(.+)$/i);
-
     return {
-      barcode: barcodeMatch ? barcodeMatch[1] : "Unknown",
-      status: statusMatch ? statusMatch[1] : "Unknown",
-      location: locationMatch ? locationMatch[1].trim() : "Unknown",
       fullMessage: smsText,
     };
   };
@@ -95,9 +86,6 @@ const SmsTrackingScreen = () => {
         renderItem={({ item }) => (
           <View style={styles.messageCard}>
             <Text style={styles.timestamp}>{item.timestamp}</Text>
-            <Text>Barcode: {item.data.barcode}</Text>
-            <Text>Status: {item.data.status}</Text>
-            <Text>Location: {item.data.location}</Text>
             <Text style={styles.fullMessage}>{item.data.fullMessage}</Text>
           </View>
         )}

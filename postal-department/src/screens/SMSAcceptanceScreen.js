@@ -138,7 +138,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
 
       console.log("Gateway response:", response);
 
-      if (response && response.barcode && response.location) {
+      if (response && response.fullMessage) {
         setSmsReply(response.fullMessage);
         Alert.alert("Success", response.fullMessage, [
           { text: "OK", onPress: () => setFormData(initialFormState) },

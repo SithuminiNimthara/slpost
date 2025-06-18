@@ -21,7 +21,7 @@ const BarcodeInput = ({ barcode, setBarcode, onTrack, onScan }) => {
           style={styles.input}
           placeholder="Scan or enter barcode"
           value={barcode}
-          onChangeText={(text) => setBarcode(text.toUpperCase())}
+          onChangeText={setBarcode}
         />
         <TouchableOpacity style={styles.trackButton} onPress={onTrack}>
           <Text style={styles.trackButtonText}>Track</Text>
