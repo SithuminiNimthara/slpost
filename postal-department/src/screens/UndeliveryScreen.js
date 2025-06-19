@@ -1,4 +1,3 @@
-// UndeliveryScreen.js
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
@@ -13,6 +12,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
+import axios from "axios";
 import {
   loadBarcodes,
   storeBarcodes,
@@ -39,7 +39,7 @@ const UndeliveryScreen = () => {
   const [allBarcodes, setAllBarcodes] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [userId, setUserId] = useState("");
-  const [userLocation, setUserLocation] = useState("");
+  const [officeId, setOfficeId] = useState(""); // Changed from userLocation
   const [reasonId, setReasonId] = useState("");
   const inputRef = useRef(null);
   const isInitialLoad = useRef(true);
@@ -50,7 +50,7 @@ const UndeliveryScreen = () => {
       if (userData) {
         const user = JSON.parse(userData);
         setUserId(user.User_id || "");
-        setUserLocation(user.Location_id || user.Location || "");
+        setOfficeId(user.Location_id || user.office_id || ""); // Adjust as per your user_data structure
       }
 
       const deliveryStored = await loadBarcodes();
@@ -115,6 +115,7 @@ const UndeliveryScreen = () => {
     setBarcodes(updated);
   };
 
+  // UPDATED: Send to API
   const handleSend = async () => {
     if (barcodes.length === 0) {
       Alert.alert("Error", "Add at least one barcode to send.");
@@ -124,23 +125,57 @@ const UndeliveryScreen = () => {
       Alert.alert("Error", "Please select a reason for undelivery.");
       return;
     }
+    if (!userId || !officeId) {
+      Alert.alert("Error", "User or office ID missing.");
+      return;
+    }
 
     try {
       const undelivered = barcodes.map((b) => b.value);
 
-      const updatedDelivery = allBarcodes.map((b) =>
-        undelivered.includes(b.value)
-          ? { ...b, status: "undelivered", reasonId }
-          : b
-      );
-      await storeBarcodes(updatedDelivery);
-      await clearUndeliveryBarcodes();
-      setBarcodes([]);
-      setReasonId("");
+      // Prepare payload for API
+      const payload = {
+        barcode: undelivered,
+        user_id: userId,
+        office_id: officeId,
+        attempt: reasonId,
+      };
 
-      Alert.alert("Success", "Undelivery details sent successfully!");
+      // Send POST request to the API
+      const response = await axios.post(
+        "https://ec.slpost.gov.lk/slpmail/forwardUndelivery.php",
+        payload,
+        {
+          headers: { "Content-Type": "application/json" },
+          timeout: 10000,
+        }
+      );
+
+      // Handle API response
+      if (response.data && response.data.Status === "Processed") {
+        // Optionally update local storage
+        const updatedDelivery = allBarcodes.map((b) =>
+          undelivered.includes(b.value)
+            ? { ...b, status: "undelivered", reasonId }
+            : b
+        );
+        await storeBarcodes(updatedDelivery);
+        await clearUndeliveryBarcodes();
+        setBarcodes([]);
+        setReasonId("");
+        Alert.alert("Success", "Undelivery details sent successfully!");
+      } else {
+        Alert.alert(
+          "Error",
+          response.data?.message || "Failed to send undelivery details."
+        );
+      }
     } catch (error) {
-      Alert.alert("Error", "Failed to send undelivery details.");
+      console.error(error);
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || "Failed to send undelivery details."
+      );
     }
   };
 
