@@ -15,13 +15,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { storeBarcodes, loadBarcodes } from "../utils/barcodeStorage";
 import styles from "../styles/deliveryStyles";
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
+
+// Set the attempt code as needed (4 for delivered, 7 for undelivered, etc.)
+const DELIVERY_ATTEMPT_CODE = "4";
 
 const DeliveryScreen = () => {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [barcodes, setBarcodes] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [userId, setUserId] = useState("");
-  const [userLocation, setUserLocation] = useState("");
+  const [officeId, setOfficeId] = useState("");
   const inputRef = useRef(null);
   const navigation = useNavigation();
 
@@ -31,7 +35,7 @@ const DeliveryScreen = () => {
       if (userData) {
         const user = JSON.parse(userData);
         setUserId(user.User_id || "");
-        setUserLocation(user.Location || user.Location_id || "");
+        setOfficeId(user.Location_id || user.office_id || user.Location || "");
       }
     };
     loadUser();
@@ -97,20 +101,73 @@ const DeliveryScreen = () => {
       Alert.alert("Error", "Add at least one barcode to send.");
       return;
     }
+    if (!userId || !officeId) {
+      Alert.alert("Error", "User or office ID missing.");
+      return;
+    }
 
     try {
-      const stored = await loadBarcodes();
-      const updated = stored.map((b) =>
-        barcodes.some((item) => item.value === b.value)
-          ? { ...b, status: "delivered" }
-          : b
+      // Prepare payload for API
+      const payload = {
+        barcode: barcodes.map((b) => b.value),
+        user_id: userId,
+        office_id: officeId,
+        attempt: DELIVERY_ATTEMPT_CODE,
+      };
+
+      // Send POST request to the API
+      const response = await axios.post(
+        "https://ec.slpost.gov.lk/slpmail/forwardDelivery.php",
+        payload,
+        {
+          headers: { "Content-Type": "application/json" },
+          timeout: 10000,
+        }
       );
-      await storeBarcodes(updated);
-      setBarcodes([]);
-      setBarcodeInput("");
-      Alert.alert("Success", "Delivery details sent successfully!");
+
+      // Handle API response
+      if (response.data && response.data.Status === "Processed") {
+        // Show warnings or success for each barcode
+        const results = response.data.Results || [];
+        let warningMessages = results
+          .filter((r) => r.status !== "Success")
+          .map((r) => `${r.barcode}: ${r.message}`)
+          .join("\n");
+
+        let successMessages = results
+          .filter((r) => r.status === "Success")
+          .map((r) => `${r.barcode}: Delivered`)
+          .join("\n");
+
+        if (successMessages) {
+          Alert.alert("Success", `Delivered:\n${successMessages}`);
+        }
+        if (warningMessages) {
+          Alert.alert("Warning", warningMessages);
+        }
+
+        // Update local storage to mark as delivered
+        const stored = await loadBarcodes();
+        const updated = stored.map((b) =>
+          barcodes.some((item) => item.value === b.value)
+            ? { ...b, status: "delivered" }
+            : b
+        );
+        await storeBarcodes(updated);
+        setBarcodes([]);
+        setBarcodeInput("");
+      } else {
+        Alert.alert(
+          "Error",
+          response.data?.message || "Failed to send delivery details."
+        );
+      }
     } catch (error) {
-      Alert.alert("Error", "Failed to send delivery details.");
+      console.error("API error:", error.response?.data || error.message);
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || "Failed to send delivery details."
+      );
     }
   };
 
