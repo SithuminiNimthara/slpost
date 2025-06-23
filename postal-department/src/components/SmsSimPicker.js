@@ -1,7 +1,7 @@
 // components/SmsSimPicker.js
 import React, { useState, useEffect } from "react";
 import { View, Text, Alert } from "react-native";
-import { Picker } from "@react-native-picker/picker"; // Use this Picker package!
+import { Picker } from "@react-native-picker/picker";
 import { getSimData } from "react-native-sim-data";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import styles from "../styles/settingsStyles";
@@ -34,7 +34,7 @@ const SmsSimPicker = () => {
   };
 
   return (
-    <View style={styles.pickerContainer}>
+    <View>
       <Text style={styles.label}>Select Default SIM</Text>
       {simOptions.length > 1 ? (
         <Picker
