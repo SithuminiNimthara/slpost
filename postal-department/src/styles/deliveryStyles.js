@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 10,
-    justifyContent: "space-between", // aligns children to edges
+    justifyContent: "space-between",
   },
   input: {
     flex: 1,
@@ -93,6 +93,27 @@ const styles = StyleSheet.create({
     color: "#aaa",
     textAlign: "center",
     marginTop: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginRight: 10,
+  },
+
+  pickerWrapper: {
+    flex: 1,
+    height: 46,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    justifyContent: "center",
+  },
+
+  picker: {
+    height: 46,
+    color: "#333",
   },
 });
 
