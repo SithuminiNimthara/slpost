@@ -13,6 +13,7 @@ import SMSReport from "../screens/SMSReportScreen";
 import Delivery from "../screens/DeliveryScreen";
 import Undelivery from "../screens/UndeliveryScreen";
 import Report from "../screens/ReportScreen";
+import AddBeat from "../screens/AddBeatScreen";
 
 const Stack = createStackNavigator();
 
@@ -73,6 +74,15 @@ export default function AppStack() {
         component={Undelivery}
         options={{
           title: "Undelivery",
+          headerRight: () => <HeaderRight />,
+        }}
+      />
+
+      <Stack.Screen
+        name="AddBeat"
+        component={AddBeat}
+        options={{
+          title: "Add Beat",
           headerRight: () => <HeaderRight />,
         }}
       />

@@ -43,8 +43,16 @@ const SLPMail = ({ navigation }) => {
               style={styles.gridItem}
               onPress={() => navigation.navigate("Undelivery")}
             >
-              <FontAwesome5 name="times-circle" size={24} color="#9C1D1D" />
+              <FontAwesome5 name="box-open" size={24} color="#9C1D1D" />
               <Text style={styles.gridText}>Undelivery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridItem}
+              onPress={() => navigation.navigate("AddBeat")}
+            >
+              <FontAwesome5 name="route" size={24} color="#9C1D1D" />
+              <Text style={styles.gridText}>Add Beat</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
