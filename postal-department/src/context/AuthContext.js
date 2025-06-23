@@ -36,13 +36,13 @@ export const AuthProvider = ({ children }) => {
           Location: data.Location,
           Location_id: data.Location_id,
           privilege: data.privilege,
-          beat_no: data.beat_no,
+          beats: data.beats,
         };
         await AsyncStorage.setItem("user_data", JSON.stringify(userData));
         setUser(userData);
 
         alert(
-          `Login Successful!\n\nUser ID: ${userData.User_id}\nName: ${userData.Name}\nLocation: ${userData.Location}\nLocation ID: ${userData.Location_id}\nPrivilege: ${userData.privilege}\nBeat No: ${userData.beat_no}`
+          `Login Successful!\n\nUser ID: ${userData.User_id}\nName: ${userData.Name}\nLocation: ${userData.Location}\nLocation ID: ${userData.Location_id}\nPrivilege: ${userData.privilege}\nBeat No: ${userData.beats}`
         );
       } else if (data.Status === "Error" && data.Error === "Invalid username") {
         setUser(null);

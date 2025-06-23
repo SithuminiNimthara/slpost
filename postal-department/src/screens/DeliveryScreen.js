@@ -16,8 +16,8 @@ import { storeBarcodes, loadBarcodes } from "../utils/barcodeStorage";
 import styles from "../styles/deliveryStyles";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
+import { Picker } from "@react-native-picker/picker";
 
-// Set the attempt code as needed (4 for delivered, 7 for undelivered, etc.)
 const DELIVERY_ATTEMPT_CODE = "4";
 
 const DeliveryScreen = () => {
@@ -26,6 +26,9 @@ const DeliveryScreen = () => {
   const [scanning, setScanning] = useState(false);
   const [userId, setUserId] = useState("");
   const [officeId, setOfficeId] = useState("");
+  const [postmanName, setPostmanName] = useState("");
+  const [assignedBeatNumber, setAssignedBeatNumber] = useState(1); // From user.beat_no
+  const [beats, setbeats] = useState(""); // Dropdown value
   const inputRef = useRef(null);
   const navigation = useNavigation();
 
@@ -36,6 +39,7 @@ const DeliveryScreen = () => {
         const user = JSON.parse(userData);
         setUserId(user.User_id || "");
         setOfficeId(user.Location_id || user.office_id || user.Location || "");
+        setAssignedBeatNumber(parseInt(user.beats) || 1); // Set assigned beat number
       }
     };
     loadUser();
@@ -105,17 +109,25 @@ const DeliveryScreen = () => {
       Alert.alert("Error", "User or office ID missing.");
       return;
     }
+    if (!postmanName.trim()) {
+      Alert.alert("Error", "Please enter the postman name.");
+      return;
+    }
+    if (!beats) {
+      Alert.alert("Error", "Please select a beat number.");
+      return;
+    }
 
     try {
-      // Prepare payload for API
       const payload = {
         barcode: barcodes.map((b) => b.value),
         user_id: userId,
         office_id: officeId,
         attempt: DELIVERY_ATTEMPT_CODE,
+        postman_name: postmanName,
+        beats: beats, // Use selected dropdown value
       };
 
-      // Send POST request to the API
       const response = await axios.post(
         "https://ec.slpost.gov.lk/slpmail/forwardDelivery.php",
         payload,
@@ -125,9 +137,7 @@ const DeliveryScreen = () => {
         }
       );
 
-      // Handle API response
       if (response.data && response.data.Status === "Processed") {
-        // Show warnings or success for each barcode
         const results = response.data.Results || [];
         let warningMessages = results
           .filter((r) => r.status !== "Success")
@@ -146,7 +156,6 @@ const DeliveryScreen = () => {
           Alert.alert("Warning", warningMessages);
         }
 
-        // Update local storage to mark as delivered
         const stored = await loadBarcodes();
         const updated = stored.map((b) =>
           barcodes.some((item) => item.value === b.value)
@@ -156,6 +165,8 @@ const DeliveryScreen = () => {
         await storeBarcodes(updated);
         setBarcodes([]);
         setBarcodeInput("");
+        setPostmanName("");
+        setbeats("");
       } else {
         Alert.alert(
           "Error",
@@ -171,8 +182,42 @@ const DeliveryScreen = () => {
     }
   };
 
+  // Generate beat options dynamically
+  const beatOptions = [];
+  for (let i = 1; i <= assignedBeatNumber; i++) {
+    beatOptions.push(i.toString());
+  }
+
   return (
     <View style={styles.container}>
+      {/* Postman Name input */}
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          placeholder="Postman Name"
+          value={postmanName}
+          onChangeText={setPostmanName}
+        />
+      </View>
+      {/* Beat Number dropdown */}
+     <View style={styles.inputRow}>
+  <Text style={styles.label}>Beat Number:</Text>
+  <View style={styles.pickerWrapper}>
+    <Picker
+      selectedValue={beats}
+      onValueChange={setbeats}
+      style={styles.picker}
+      dropdownIconColor="#333"
+    >
+      <Picker.Item label="-- Select Beat --" value="" />
+      {beatOptions.map((num) => (
+        <Picker.Item key={num} label={num} value={num} />
+      ))}
+    </Picker>
+  </View>
+</View>
+
+
       <View style={styles.inputRow}>
         <TextInput
           ref={inputRef}
