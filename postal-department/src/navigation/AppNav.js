@@ -6,10 +6,10 @@ import AppStack from "./AppStack";
 import { AuthContext } from "../context/AuthContext";
 
 function AppNav() {
-  // Get values from AuthContext
-  const { isLoading, user } = useContext(AuthContext);
+  const { isAppReady, user, isLoading } = useContext(AuthContext);
 
-  if (isLoading) {
+  if (!isAppReady) {
+    // Show splash/loading screen while preparing app
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />

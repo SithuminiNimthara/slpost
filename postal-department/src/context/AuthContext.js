@@ -5,23 +5,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // for login
   const [user, setUser] = useState(null);
+  const [isAppReady, setIsAppReady] = useState(false); // for startup
 
-  // Load user session from AsyncStorage on app start
   useEffect(() => {
-    AsyncStorage.getItem("user_data").then((data) => {
-      if (data) setUser(JSON.parse(data));
-    });
+    const resetSession = async () => {
+      await AsyncStorage.removeItem("user_data"); // clear saved session
+      setUser(null);
+      setIsAppReady(true); // now app can render login
+    };
+    resetSession();
   }, []);
 
   const login = async (username, password) => {
     setIsLoading(true);
-
     try {
-      // Real API login logic
       const response = await axios.post(
-        //"https://slpmail.slpost.gov.lk/appapi/appuser.php",
         "https://ec.slpost.gov.lk/slpmail/forwardUser.php",
         { username, password },
         { headers: { "Content-Type": "application/json" } }
@@ -40,17 +40,11 @@ export const AuthProvider = ({ children }) => {
         };
         await AsyncStorage.setItem("user_data", JSON.stringify(userData));
         setUser(userData);
-
-        alert(
-          `Login Successful!\n\nUser ID: ${userData.User_id}\nName: ${userData.Name}\nLocation: ${userData.Location}\nLocation ID: ${userData.Location_id}\nPrivilege: ${userData.privilege}\nBeat No: ${userData.beats}`
-        );
-      } else if (data.Status === "Error" && data.Error === "Invalid username") {
+        alert(`Welcome! Login successful.\n${userData.Name} as ${userData.privilege} logged to ${userData.Location}.`);
+      } else if (data.Error === "Invalid username") {
         setUser(null);
         alert("Invalid username");
-      } else if (
-        data.Status === "Error" &&
-        data.Error === "Invalid Usrename or Password"
-      ) {
+      } else if (data.Error === "Invalid Usrename or Password") {
         setUser(null);
         alert("Invalid username or password");
       } else {
@@ -67,13 +61,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    console.log("Logout called");
     setUser(null);
     await AsyncStorage.removeItem("user_data");
   };
 
   return (
-    <AuthContext.Provider value={{ login, logout, isLoading, user }}>
+    <AuthContext.Provider value={{ login, logout, isLoading, isAppReady, user }}>
       {children}
     </AuthContext.Provider>
   );
