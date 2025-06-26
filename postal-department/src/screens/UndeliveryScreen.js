@@ -39,7 +39,7 @@ const UndeliveryScreen = () => {
   const [allBarcodes, setAllBarcodes] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [userId, setUserId] = useState("");
-  const [officeId, setOfficeId] = useState(""); // Changed from userLocation
+  const [officeId, setOfficeId] = useState("");
   const [reasonId, setReasonId] = useState("");
   const inputRef = useRef(null);
   const isInitialLoad = useRef(true);
@@ -50,7 +50,7 @@ const UndeliveryScreen = () => {
       if (userData) {
         const user = JSON.parse(userData);
         setUserId(user.User_id || "");
-        setOfficeId(user.Location_id || user.office_id || ""); // Adjust as per your user_data structure
+        setOfficeId(user.Location_id || user.office_id || "");
       }
 
       const deliveryStored = await loadBarcodes();
@@ -115,7 +115,6 @@ const UndeliveryScreen = () => {
     setBarcodes(updated);
   };
 
-  // UPDATED: Send to API
   const handleSend = async () => {
     if (barcodes.length === 0) {
       Alert.alert("Error", "Add at least one barcode to send.");
@@ -131,31 +130,56 @@ const UndeliveryScreen = () => {
     }
 
     try {
-      const undelivered = barcodes.map((b) => b.value);
-
-      // Prepare payload for API
       const payload = {
-        barcode: undelivered,
+        barcode: barcodes.map((b) => b.value),
         user_id: userId,
         office_id: officeId,
         attempt: reasonId,
       };
 
-      // Send POST request to the API
-      const response = await axios.post(
+      const rawResponse = await axios.post(
         "https://ec.slpost.gov.lk/slpmail/forwardUndelivery.php",
         payload,
         {
           headers: { "Content-Type": "application/json" },
           timeout: 10000,
+          responseType: "text", // get raw response
         }
       );
 
-      // Handle API response
-      if (response.data && response.data.Status === "Processed") {
-        // Optionally update local storage
+      console.log("Full Response:", rawResponse.data);
+      const cleaned = rawResponse.data.replace(/^\d+/, ""); // remove number prefix
+      let parsed;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (err) {
+        console.error("JSON parse error:", err);
+        Alert.alert("Error", "Invalid server response.");
+        return;
+      }
+
+      const results = Array.isArray(parsed?.Results) ? parsed.Results : [];
+
+      if (results.length === 0) {
+        Alert.alert(
+          "No Results",
+          "Server responded but returned no result messages."
+        );
+        return;
+      }
+
+      // Show all results (Success/Error/Warning) per barcode
+      const messages = results
+        .map((res) => `${res.barcode}: ${res.message}`)
+        .join("\n");
+      Alert.alert(parsed.Status || "Result", messages);
+
+      // Only update and clear if no errors
+      const hasError = results.some((r) => r.status === "Error");
+      if (!hasError) {
+        const undeliveredBarcodes = barcodes.map((b) => b.value);
         const updatedDelivery = allBarcodes.map((b) =>
-          undelivered.includes(b.value)
+          undeliveredBarcodes.includes(b.value)
             ? { ...b, status: "undelivered", reasonId }
             : b
         );
@@ -163,15 +187,9 @@ const UndeliveryScreen = () => {
         await clearUndeliveryBarcodes();
         setBarcodes([]);
         setReasonId("");
-        Alert.alert("Success", "Undelivery details sent successfully!");
-      } else {
-        Alert.alert(
-          "Error",
-          response.data?.message || "Failed to send undelivery details."
-        );
       }
     } catch (error) {
-      console.error(error);
+      console.error("API call failed:", error);
       Alert.alert(
         "Error",
         error.response?.data?.message || "Failed to send undelivery details."
