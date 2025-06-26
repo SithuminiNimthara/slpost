@@ -136,11 +136,7 @@ const ReportScreen = () => {
     const eDate = formatDateDisplay(endDate);
 
     // User summary table
-    const userHeaders = [
-      "Accept Qty",
-      "Accept Amount(Rs)",
-      "Delivery Qty",
-    ];
+    const userHeaders = ["Accept Qty", "Accept Amount(Rs)", "Delivery Qty"];
     const userValues = [
       result.accept_qty_user,
       result.accept_amount_user,
@@ -162,7 +158,7 @@ const ReportScreen = () => {
         </Text>
         {renderTable(userHeaders, userValues)}
         <Text style={styles.sectionTitle}>
-          {`${result.poname} :  ${sDate}  to  ${eDate}  Report`}
+          {`${result.poname} :  ${sDate}  to  ${eDate} Old Report`}
         </Text>
         {renderTable(officeHeaders, officeValues)}
       </View>
