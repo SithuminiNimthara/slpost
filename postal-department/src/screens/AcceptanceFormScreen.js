@@ -51,6 +51,32 @@ const AcceptanceForm = () => {
   const [locationId, setLocationId] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Add this missing function for updating form fields
+  const updateFormField = (name, value) => {
+    if (name === "barcode") {
+      const isValidBarcode = /^[A-Z]{2}\d{9}LK$/.test(
+        value.trim().toUpperCase()
+      );
+      if (!isValidBarcode) {
+        Alert.alert(
+          "Invalid Barcode",
+          "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
+        );
+        return; // Don't update with invalid barcode
+      }
+    }
+
+    if (name === "contact_no") {
+      // Only digits, max length 10
+      value = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   useEffect(() => {
     const requestCameraPermission = async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
@@ -71,32 +97,23 @@ const AcceptanceForm = () => {
   }, []);
 
   useEffect(() => {
-    const weightValue = parseFloat(formData.weight);
-    if (!isNaN(weightValue) && weightValue > 0) {
-      const amount = calculatePostage(weightValue, formData.company_type);
-      setFormData((prev) => ({
-        ...prev,
-        amount: amount.toFixed(2),
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        amount: "",
-      }));
-    }
+    const calculateAmount = () => {
+      const weightNum = parseFloat(formData.weight);
+      if (isNaN(weightNum) || weightNum <= 0) {
+        setFormData((prev) => ({ ...prev, amount: "" }));
+        return;
+      }
+
+      const amount = calculatePostage(weightNum, formData.company_type);
+      if (amount !== null) {
+        setFormData((prev) => ({ ...prev, amount: amount.toFixed(2) }));
+      } else {
+        setFormData((prev) => ({ ...prev, amount: "" }));
+      }
+    };
+
+    calculateAmount();
   }, [formData.weight, formData.company_type]);
-
-  const updateFormField = (name, value) => {
-    if (name === "contact_no") {
-      // Remove non-digit characters
-      value = value.replace(/\D/g, "").slice(0, 10); // Allow max 10 digits
-    }
-
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
 
   const formatFieldName = (field) =>
     field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
@@ -122,10 +139,6 @@ const AcceptanceForm = () => {
       "sender_name",
       "receiver_name",
       "contact_no",
-      "address_l1",
-      "city_1",
-      "address_l2",
-      "city_2",
       "company_type",
       "weight",
       "amount",
@@ -136,7 +149,10 @@ const AcceptanceForm = () => {
     if (missingField) {
       Alert.alert(
         "Missing Field",
-        `${formatFieldName(missingField)} is required.`
+        `${
+          missingField.charAt(0).toUpperCase() +
+          missingField.slice(1).replace(/_/g, " ")
+        } is required.`
       );
       return;
     }
@@ -160,11 +176,7 @@ const AcceptanceForm = () => {
       const response = await axios.post(
         "https://ec.slpost.gov.lk/slpmail/forwardAccept.php",
         payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       if (response.status === 200 && response.data?.Status === "Success") {
@@ -182,6 +194,14 @@ const AcceptanceForm = () => {
         );
 
         setFormData(initialFormState);
+      } else if (
+        response.data?.Status === "Error" &&
+        response.data?.Error === "Barcode Already Exists"
+      ) {
+        Alert.alert(
+          "Duplicate Barcode",
+          "This barcode already exists in the system."
+        );
       } else {
         Alert.alert("Error", response.data?.message || "Submission failed.");
         console.error("Form submission failed. Response:", response.data);
