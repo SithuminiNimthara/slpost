@@ -18,8 +18,6 @@ import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { Picker } from "@react-native-picker/picker";
 
-const DELIVERY_ATTEMPT_CODE = "4";
-
 const DeliveryScreen = () => {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [barcodes, setBarcodes] = useState([]);
@@ -27,8 +25,8 @@ const DeliveryScreen = () => {
   const [userId, setUserId] = useState("");
   const [officeId, setOfficeId] = useState("");
   const [postmanName, setPostmanName] = useState("");
-  const [assignedBeatNumber, setAssignedBeatNumber] = useState(1); // From user.beat_no
-  const [beats, setbeats] = useState(""); // Dropdown value
+  const [assignedBeatNumber, setAssignedBeatNumber] = useState(1);
+  const [beats, setbeats] = useState("");
   const inputRef = useRef(null);
   const navigation = useNavigation();
 
@@ -39,7 +37,7 @@ const DeliveryScreen = () => {
         const user = JSON.parse(userData);
         setUserId(user.User_id || "");
         setOfficeId(user.Location_id || user.office_id || user.Location || "");
-        setAssignedBeatNumber(parseInt(user.beats) || 1); // Set assigned beat number
+        setAssignedBeatNumber(parseInt(user.beats) || 1);
       }
     };
     loadUser();
@@ -118,71 +116,86 @@ const DeliveryScreen = () => {
       return;
     }
 
-    try {
-      const payload = {
-        barcode: barcodes.map((b) => b.value),
-        user_id: userId,
-        office_id: officeId,
-        attempt: DELIVERY_ATTEMPT_CODE,
-        postman_name: postmanName,
-        beats: beats, // Use selected dropdown value
-      };
+    const payload = {
+      barcode: barcodes.map((b) => b.value.trim().toUpperCase()),
+      user_id: userId.trim(),
+      office_id: officeId.trim(),
+      postman: postmanName.trim(),
+      beat_no: beats.toString().trim(),
+    };
 
-      const response = await axios.post(
+    payload.barcode.forEach((bc, idx) =>
+      console.log(`Barcode[${idx}]:`, JSON.stringify(bc))
+    );
+    console.log("Sending payload:", JSON.stringify(payload, null, 2));
+
+    try {
+      const rawResponse = await axios.post(
         "https://ec.slpost.gov.lk/slpmail/forwardDelivery.php",
         payload,
         {
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": "ReactNativeApp",
+          },
           timeout: 10000,
+          responseType: "text", // read raw text
         }
       );
 
-      if (response.data && response.data.Status === "Processed") {
-        const results = response.data.Results || [];
-        let warningMessages = results
-          .filter((r) => r.status !== "Success")
-          .map((r) => `${r.barcode}: ${r.message}`)
-          .join("\n");
+      console.log("HTTP Status:", rawResponse.status, rawResponse.statusText);
+      console.log("Full API response:", rawResponse.data);
 
-        let successMessages = results
-          .filter((r) => r.status === "Success")
-          .map((r) => `${r.barcode}: Delivered`)
-          .join("\n");
-
-        if (successMessages) {
-          Alert.alert("Success", `Delivered:\n${successMessages}`);
-        }
-        if (warningMessages) {
-          Alert.alert("Warning", warningMessages);
-        }
-
-        const stored = await loadBarcodes();
-        const updated = stored.map((b) =>
-          barcodes.some((item) => item.value === b.value)
-            ? { ...b, status: "delivered" }
-            : b
-        );
-        await storeBarcodes(updated);
-        setBarcodes([]);
-        setBarcodeInput("");
-        setPostmanName("");
-        setbeats("");
-      } else {
-        Alert.alert(
-          "Error",
-          response.data?.message || "Failed to send delivery details."
-        );
+      const cleaned = rawResponse.data.replace(/^\d+/, ""); // remove numeric prefix
+      let parsed;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (err) {
+        console.error("Failed to parse response:", err.message);
+        Alert.alert("Error", "Received invalid response from server.");
+        return;
       }
+
+      console.log("Parsed response:", parsed);
+
+      const results = Array.isArray(parsed?.Results) ? parsed.Results : [];
+
+      if (results.length === 0) {
+        Alert.alert(
+          parsed.Status || "No Results",
+          parsed.Status === "Success"
+            ? "No results returned. The item might already be delivered or not valid for this delivery attempt."
+            : "Server responded, but no results were returned."
+        );
+        return;
+      }
+
+      const messages = results
+        .map((r) => `${r.barcode}: ${r.message}`)
+        .join("\n");
+
+      Alert.alert(parsed.Status || "Result", messages);
+
+      const stored = await loadBarcodes();
+      const updated = stored.map((b) =>
+        barcodes.some((item) => item.value === b.value)
+          ? { ...b, status: "delivered" }
+          : b
+      );
+      await storeBarcodes(updated);
+      setBarcodes([]);
+      setBarcodeInput("");
+      setPostmanName("");
+      setbeats("");
     } catch (error) {
-      console.error("API error:", error.response?.data || error.message);
+      console.error("Delivery error:", error.response?.data || error.message);
       Alert.alert(
-        "Error",
-        error.response?.data?.message || "Failed to send delivery details."
+        "Delivery Failed",
+        error.response?.data?.message || "Unable to send delivery data."
       );
     }
   };
 
-  // Generate beat options dynamically
   const beatOptions = [];
   for (let i = 1; i <= assignedBeatNumber; i++) {
     beatOptions.push(i.toString());
@@ -190,7 +203,6 @@ const DeliveryScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Postman Name input */}
       <View style={styles.inputRow}>
         <TextInput
           style={styles.input}
@@ -199,24 +211,23 @@ const DeliveryScreen = () => {
           onChangeText={setPostmanName}
         />
       </View>
-      {/* Beat Number dropdown */}
-     <View style={styles.inputRow}>
-  <Text style={styles.label}>Beat Number:</Text>
-  <View style={styles.pickerWrapper}>
-    <Picker
-      selectedValue={beats}
-      onValueChange={setbeats}
-      style={styles.picker}
-      dropdownIconColor="#333"
-    >
-      <Picker.Item label="-- Select Beat --" value="" />
-      {beatOptions.map((num) => (
-        <Picker.Item key={num} label={num} value={num} />
-      ))}
-    </Picker>
-  </View>
-</View>
 
+      <View style={styles.inputRow}>
+        <Text style={styles.label}>Beat Number:</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={beats}
+            onValueChange={setbeats}
+            style={styles.picker}
+            dropdownIconColor="#333"
+          >
+            <Picker.Item label="-- Select Beat --" value="" />
+            {beatOptions.map((num) => (
+              <Picker.Item key={num} label={num} value={num} />
+            ))}
+          </Picker>
+        </View>
+      </View>
 
       <View style={styles.inputRow}>
         <TextInput
