@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, TouchableOpacity, Text, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import styles from "../styles/addBeatStyles";
@@ -10,7 +17,6 @@ const AddBeatScreen = () => {
   const [userId, setUserId] = useState("");
   const [officeId, setOfficeId] = useState("");
 
-  // Load user data from AsyncStorage on mount
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -57,8 +63,19 @@ const AddBeatScreen = () => {
       );
 
       if (response.data && response.data.Status === "Success") {
-        Alert.alert("Success", response.data.Message || "Beat updated successfully!");
+        Alert.alert(
+          "Success",
+          response.data.Message || "Beat updated successfully!"
+        );
         setBeatNumber("");
+
+        // ✅ Update user_data in AsyncStorage with new beat number
+        const userData = await AsyncStorage.getItem("user_data");
+        if (userData) {
+          const user = JSON.parse(userData);
+          user.beats = beatNumber;
+          await AsyncStorage.setItem("user_data", JSON.stringify(user));
+        }
       } else {
         Alert.alert(
           "Error",
@@ -96,7 +113,13 @@ const AddBeatScreen = () => {
           {loading ? "Submitting..." : "Submit"}
         </Text>
       </TouchableOpacity>
-      {loading && <ActivityIndicator size="small" color="#B32A2A" style={{ marginTop: 10 }} />}
+      {loading && (
+        <ActivityIndicator
+          size="small"
+          color="#B32A2A"
+          style={{ marginTop: 10 }}
+        />
+      )}
     </View>
   );
 };
