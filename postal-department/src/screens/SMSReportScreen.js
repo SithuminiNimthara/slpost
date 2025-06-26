@@ -154,7 +154,7 @@ const SMSReportScreen = () => {
 
       {smsResponse ? (
         <View style={styles.responseBox}>
-          <Text style={styles.responseLabel}>Reply from Gateway:</Text>
+          <Text style={styles.responseLabel}>Reply Message:</Text>
           {smsResponse.split("\n").map((line, index) => (
             <Text key={index} style={styles.responseText}>
               {line.trim()}

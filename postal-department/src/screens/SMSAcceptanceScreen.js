@@ -209,7 +209,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
 
       {smsReply && (
         <View style={styles.replyContainer}>
-          <Text style={styles.replyTitle}>Reply from Gateway:</Text>
+          <Text style={styles.replyTitle}>Reply Message:</Text>
           {smsReply.split("\n").map((line, index) => (
             <Text key={index} style={styles.replyText}>
               {line.trim()}

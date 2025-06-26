@@ -43,7 +43,7 @@ export const sendSms = async (type, params = {}) => {
         Alert.alert("Error", "Barcode is required.");
         return;
       }
-      message = `pec slpd ${barcode} delivered`;
+      message = `pec slpd ${barcode}`;
       break;
     }
 
