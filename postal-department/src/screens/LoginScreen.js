@@ -14,15 +14,17 @@ const Login = () => {
       setError("Please enter username and password");
       return;
     }
-    
+
     setError(""); // Clear error before attempting login
     login(username, password);
   };
 
   return (
     <View style={styles.container}>
-      <Image source={require("../assets/sl-post.jpg")} style={styles.logo} />
-      <Text style={styles.title}>Login</Text>
+      <Image source={require("../assets/sl-post.png")} style={styles.logo} />
+
+      <Text style={styles.title}>Login to Postal Department</Text>
+
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <TextInput
         style={styles.input}
