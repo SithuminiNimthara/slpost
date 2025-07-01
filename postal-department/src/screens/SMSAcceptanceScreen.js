@@ -16,6 +16,12 @@ import styles from "../styles/smsacceptanceStyles";
 import { sendSms } from "../utils/sendSms";
 import { calculatePostage } from "../utils/calculatePostage";
 
+// ✅ Barcode validation function
+const isValidBarcode = (barcode) => {
+  const regex = /^[A-Z]{2}[0-9]{9}LK$/;
+  return regex.test(barcode);
+};
+
 const requestSmsPermission = async () => {
   if (Platform.OS === "android") {
     try {
@@ -98,20 +104,40 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
         }
       }
 
+      // (Optional) Validate barcode as user types
+      if (name === "barcodeNo" && value.length >= 13) {
+        const barcode = value.toUpperCase();
+        if (!isValidBarcode(barcode)) {
+          Alert.alert(
+            "Invalid Barcode Format",
+            "Barcode must be 13 characters: 2 uppercase letters, 9 digits, and end with 'LK'."
+          );
+        }
+      }
+
       return updatedData;
     });
   };
 
   const handleSubmit = async () => {
     const weight = parseFloat(formData.weight);
+    const barcode = formData.barcodeNo.trim().toUpperCase();
 
     if (
-      !formData.barcodeNo ||
+      !barcode ||
       !formData.receiverName ||
       !formData.weight ||
       !formData.amount
     ) {
       Alert.alert("Error", "All fields are required!");
+      return;
+    }
+
+    if (!isValidBarcode(barcode)) {
+      Alert.alert(
+        "Invalid Barcode",
+        "Barcode must start with 2 uppercase letters, followed by 9 digits, and end with 'LK'."
+      );
       return;
     }
 
@@ -128,7 +154,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
 
     try {
       const response = await sendSms("slpa", {
-        barcode: formData.barcodeNo.toUpperCase(),
+        barcode,
         receiverName: formData.receiverName,
         weight: formData.weight,
         amount: formData.amount,
