@@ -24,8 +24,8 @@ const formFields = [
   { label: "Receiver Name", name: "receiver_name" },
   { label: "Contact No", name: "contact_no" },
   { label: "Address 1", name: "address_l1" },
-  { label: "City 1", name: "city_1" },
   { label: "Address 2", name: "address_l2" },
+  { label: "City 1", name: "city_1" },
   { label: "City 2", name: "city_2" },
 ];
 
