@@ -6,24 +6,49 @@ const styles = StyleSheet.create({
     backgroundColor: "#fafafa",
     paddingHorizontal: 10,
   },
-  headerBox: {
-    backgroundColor: "#B32A2A",
-    padding: 12,
-    marginBottom: 18,
-    marginTop: 10,
-    alignItems: "center",
-    borderRadius: 4,
+
+  // Checkboxes
+  checkBoxGroup: {
+    marginBottom: 20,
+    marginTop: 20,
   },
-  headerText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 20,
-  },
-  row: {
+  checkBoxRow: {
     flexDirection: "row",
-    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 4,
     marginBottom: 10,
+    backgroundColor: "#eee",
   },
+  checkBoxRowSelected: {
+    backgroundColor: "#ddd",
+    borderColor: "#B32A2A",
+  },
+  checkBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 3,
+    borderWidth: 2,
+    borderColor: "#555",
+    marginRight: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkBoxChecked: {
+    width: 10,
+    height: 10,
+    backgroundColor: "#B32A2A",
+    borderRadius: 1,
+  },
+  checkBoxLabel: {
+    fontSize: 16,
+    color: "#333",
+  },
+
+  // Date Buttons
   dateButton: {
     backgroundColor: "#fff",
     borderWidth: 1,
@@ -31,9 +56,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingVertical: 12,
     paddingHorizontal: 18,
-    margin: 10,
+    marginBottom: 10,
     alignItems: "center",
     minWidth: 120,
+    flexDirection: "row",
   },
   dateButtonText: {
     color: "#B32A2A",
@@ -41,10 +67,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: "center",
   },
-  submitRow: {
-    alignItems: "center",
-    marginBottom: 10,
-  },
+
+  // Submit Button
   submitButton: {
     backgroundColor: "#B32A2A",
     borderRadius: 6,
@@ -59,6 +83,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
+
+  // Section Titles (like <username> : date to date Report)
   sectionTitle: {
     fontWeight: "bold",
     color: "#333",
@@ -66,6 +92,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontSize: 18,
   },
+
+  // Table Styling
   table: {
     borderWidth: 1,
     borderColor: "#888",
@@ -99,6 +127,8 @@ const styles = StyleSheet.create({
     color: "#222",
     textAlign: "center",
   },
+
+  // Error
   error: {
     color: "red",
     textAlign: "center",
