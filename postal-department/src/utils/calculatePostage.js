@@ -6,11 +6,6 @@ export const calculatePostage = (weight, company_type) => {
   // Normalize company_type: replace underscores with spaces and lowercase trim
   const type = (company_type || "").toString().trim().toLowerCase().replace(/_/g, " ");
 
-  console.log("Raw weight input:", weight); 
-  console.log("Parsed weight:", w);
-  console.log("Raw company type:", company_type);
-  console.log("Normalized company type:", type);
-
   // Special Case: Government Department (flat rate for weight ≤ 30g)
   if (type === "government department" && w <= 30) {
     console.log("Special case matched: Govt Dept ≤ 30g → Rs. 150");
