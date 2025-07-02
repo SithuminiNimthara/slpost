@@ -6,13 +6,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 24,
   },
-  title: {
-    fontSize: 22,
+  existingBeatText: {
+    fontSize: 16,
     fontWeight: "bold",
-    color: "#9C1D1D",
-    marginBottom: 24,
-    textAlign: "center",
+    marginBottom: 10,
+    color: "#333",
   },
+
   input: {
     borderWidth: 1,
     borderColor: "#ccc",

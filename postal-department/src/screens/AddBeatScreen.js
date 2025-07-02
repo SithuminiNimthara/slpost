@@ -16,6 +16,7 @@ const AddBeatScreen = () => {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState("");
   const [officeId, setOfficeId] = useState("");
+  const [existingBeatNumber, setExistingBeatNumber] = useState("");
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -25,11 +26,13 @@ const AddBeatScreen = () => {
           const user = JSON.parse(userData);
           setUserId(user.User_id || "");
           setOfficeId(user.Location_id || user.office_id || "");
+          setExistingBeatNumber(user.beats || "");
         }
       } catch (error) {
         console.error("Failed to load user data:", error);
       }
     };
+
     loadUserData();
   }, []);
 
@@ -74,7 +77,12 @@ const AddBeatScreen = () => {
         if (userData) {
           const user = JSON.parse(userData);
           user.beats = beatNumber;
+
+          // ✅ Update AsyncStorage
           await AsyncStorage.setItem("user_data", JSON.stringify(user));
+
+          // ✅ Update local state so UI reflects new beat number immediately
+          setExistingBeatNumber(beatNumber);
         }
       } else {
         Alert.alert(
@@ -95,9 +103,15 @@ const AddBeatScreen = () => {
 
   return (
     <View style={styles.container}>
+      {existingBeatNumber ? (
+        <Text style={styles.existingBeatText}>
+          Current Beat Count: {existingBeatNumber}
+        </Text>
+      ) : null}
+
       <TextInput
         style={styles.input}
-        placeholder="Enter Beat Number"
+        placeholder="Enter Beat Count"
         placeholderTextColor="#999"
         value={beatNumber}
         onChangeText={setBeatNumber}
