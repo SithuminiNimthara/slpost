@@ -47,7 +47,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   addButtonTextSmall: {
     color: "#fff",
     fontWeight: "bold",
@@ -76,7 +75,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   dropdownContainer: {
     backgroundColor: "#D9D9D9",
     borderRadius: 8,
@@ -97,7 +95,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   picker: {
-    height: 45,
+    height: 50,
     width: "100%",
   },
   sendButton: {
@@ -116,6 +114,48 @@ const styles = StyleSheet.create({
     color: "#aaa",
     textAlign: "center",
     marginTop: 20,
+  },
+  // NEW: Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "90%",
+    maxHeight: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#B32A2A",
+    textAlign: "center",
+  },
+  modalScroll: {
+    maxHeight: 300,
+    marginBottom: 20,
+  },
+  modalItem: {
+    fontSize: 14,
+    marginBottom: 10,
+    lineHeight: 20,
+  },
+  modalCloseButton: {
+    backgroundColor: "#B32A2A",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalCloseButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 

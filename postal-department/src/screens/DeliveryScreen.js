@@ -7,6 +7,8 @@ import {
   FlatList,
   Alert,
   Keyboard,
+  Modal,
+  ScrollView,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { FontAwesome } from "@expo/vector-icons";
@@ -18,6 +20,32 @@ import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { Picker } from "@react-native-picker/picker";
 
+const ResultModal = ({ visible, results, onClose }) => (
+  <Modal visible={visible} animationType="slide" transparent>
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContainer}>
+        <Text style={styles.modalTitle}>Delivery Results</Text>
+        <ScrollView style={styles.modalScroll}>
+          {results.map((res, index) => (
+            <Text
+              key={index}
+              style={[
+                styles.modalItem,
+                res.status === "Error" ? { color: "red" } : { color: "green" },
+              ]}
+            >
+              {res.barcode}: {res.message}
+            </Text>
+          ))}
+        </ScrollView>
+        <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
+          <Text style={styles.modalCloseButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
 const DeliveryScreen = () => {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [barcodes, setBarcodes] = useState([]);
@@ -27,6 +55,8 @@ const DeliveryScreen = () => {
   const [postmanName, setPostmanName] = useState("");
   const [assignedBeatNumber, setAssignedBeatNumber] = useState(1);
   const [beats, setbeats] = useState("");
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultMessages, setResultMessages] = useState([]);
   const inputRef = useRef(null);
   const navigation = useNavigation();
 
@@ -37,7 +67,9 @@ const DeliveryScreen = () => {
         const user = JSON.parse(userData);
         setUserId(user.User_id || "");
         setOfficeId(user.Location_id || user.office_id || user.Location || "");
-        setAssignedBeatNumber(parseInt(user.beats) || 1);
+        const beatCount = parseInt(user.beats) || 1;
+        setAssignedBeatNumber(beatCount);
+        if (beatCount === 1) setbeats("1");
       }
     };
     loadUser();
@@ -124,11 +156,6 @@ const DeliveryScreen = () => {
       beat_no: beats.toString().trim(),
     };
 
-    payload.barcode.forEach((bc, idx) =>
-      console.log(`Barcode[${idx}]:`, JSON.stringify(bc))
-    );
-    console.log("Sending payload:", JSON.stringify(payload, null, 2));
-
     try {
       const rawResponse = await axios.post(
         "https://ec.slpost.gov.lk/slpmail/forwardDelivery.php",
@@ -139,14 +166,11 @@ const DeliveryScreen = () => {
             "User-Agent": "ReactNativeApp",
           },
           timeout: 10000,
-          responseType: "text", // read raw text
+          responseType: "text",
         }
       );
 
-      console.log("HTTP Status:", rawResponse.status, rawResponse.statusText);
-      console.log("Full API response:", rawResponse.data);
-
-      const cleaned = rawResponse.data.replace(/^\d+/, ""); // remove numeric prefix
+      const cleaned = rawResponse.data.replace(/^\d+/, "");
       let parsed;
       try {
         parsed = JSON.parse(cleaned);
@@ -156,26 +180,20 @@ const DeliveryScreen = () => {
         return;
       }
 
-      console.log("Parsed response:", parsed);
-
       const results = Array.isArray(parsed?.Results) ? parsed.Results : [];
 
       if (results.length === 0) {
         Alert.alert(
           parsed.Status || "No Results",
-          parsed.Status === "Success"
-            ? "No results returned. The item might already be delivered or not valid for this delivery attempt."
-            : "Server responded, but no results were returned."
+          "Server responded but returned no result messages."
         );
         return;
       }
 
-      const messages = results
-        .map((r) => `${r.barcode}: ${r.message}`)
-        .join("\n");
+      setResultMessages(results);
+      setResultModalVisible(true);
 
-      Alert.alert(parsed.Status || "Result", messages);
-
+      // ✅ Clear inputs & barcodes
       const stored = await loadBarcodes();
       const updated = stored.map((b) =>
         barcodes.some((item) => item.value === b.value)
@@ -212,22 +230,31 @@ const DeliveryScreen = () => {
         />
       </View>
 
-      <View style={styles.inputRow}>
-        <Text style={styles.label}>Beat Number:</Text>
-        <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={beats}
-            onValueChange={setbeats}
-            style={styles.picker}
-            dropdownIconColor="#333"
-          >
-            <Picker.Item label="-- Select Beat --" value="" />
-            {beatOptions.map((num) => (
-              <Picker.Item key={num} label={num} value={num} />
-            ))}
-          </Picker>
+      {assignedBeatNumber > 1 ? (
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Beat Number:</Text>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={beats}
+              onValueChange={setbeats}
+              style={styles.picker}
+              dropdownIconColor="#333"
+            >
+              <Picker.Item label="-- Select Beat --" value="" />
+              {beatOptions.map((num) => (
+                <Picker.Item key={num} label={num} value={num} />
+              ))}
+            </Picker>
+          </View>
         </View>
-      </View>
+      ) : (
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Beat Number:</Text>
+          <View style={styles.pickerWrapper}>
+            <Text style={styles.singleValueText}>1</Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.inputRow}>
         <TextInput
@@ -283,6 +310,12 @@ const DeliveryScreen = () => {
         visible={scanning}
         onClose={() => setScanning(false)}
         onScan={handleScan}
+      />
+
+      <ResultModal
+        visible={resultModalVisible}
+        results={resultMessages}
+        onClose={() => setResultModalVisible(false)}
       />
     </View>
   );

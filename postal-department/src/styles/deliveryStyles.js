@@ -47,7 +47,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   addButtonTextSmall: {
     color: "#fff",
     fontWeight: "bold",
@@ -76,7 +75,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   sendButton: {
     backgroundColor: "#B32A2A",
     borderRadius: 10,
@@ -100,20 +98,62 @@ const styles = StyleSheet.create({
     color: "#333",
     marginRight: 10,
   },
-
   pickerWrapper: {
     flex: 1,
-    height: 46,
+    height: 50,
     backgroundColor: "#fff",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#ccc",
     justifyContent: "center",
+    paddingHorizontal: 10,
+    margin: 10,
+  },
+  picker: {
+    width: "100%",
+    height: 50,
+    color: "#333",
+    fontSize: 16,
   },
 
-  picker: {
-    height: 46,
-    color: "#333",
+  // ================= Modal Styles =================
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "90%",
+    maxHeight: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#B32A2A",
+    textAlign: "center",
+  },
+  modalScroll: {
+    marginBottom: 20,
+  },
+  modalItem: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  modalCloseButton: {
+    backgroundColor: "#B32A2A",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  modalCloseButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 

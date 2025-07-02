@@ -7,6 +7,8 @@ import {
   FlatList,
   Alert,
   Keyboard,
+  Modal,
+  ScrollView,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
@@ -32,6 +34,36 @@ const ATTEMPT_REASONS = [
   { label: "Return to RLO", value: "11" },
 ];
 
+const ResultModal = ({ visible, results, onClose }) => {
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Undelivery Results</Text>
+          <ScrollView style={styles.modalScroll}>
+            {results.map((res, index) => (
+              <Text
+                key={index}
+                style={[
+                  styles.modalItem,
+                  res.status === "Error"
+                    ? { color: "red" }
+                    : { color: "green" },
+                ]}
+              >
+                {res.barcode}: {res.message}
+              </Text>
+            ))}
+          </ScrollView>
+          <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
+            <Text style={styles.modalCloseButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 const UndeliveryScreen = () => {
   const navigation = useNavigation();
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -41,6 +73,8 @@ const UndeliveryScreen = () => {
   const [userId, setUserId] = useState("");
   const [officeId, setOfficeId] = useState("");
   const [reasonId, setReasonId] = useState("");
+  const [resultModalVisible, setResultModalVisible] = useState(false);
+  const [resultMessages, setResultMessages] = useState([]);
   const inputRef = useRef(null);
   const isInitialLoad = useRef(true);
 
@@ -143,12 +177,11 @@ const UndeliveryScreen = () => {
         {
           headers: { "Content-Type": "application/json" },
           timeout: 10000,
-          responseType: "text", // get raw response
+          responseType: "text",
         }
       );
 
-      console.log("Full Response:", rawResponse.data);
-      const cleaned = rawResponse.data.replace(/^\d+/, ""); // remove number prefix
+      const cleaned = rawResponse.data.replace(/^\d+/, "");
       let parsed;
       try {
         parsed = JSON.parse(cleaned);
@@ -168,26 +201,22 @@ const UndeliveryScreen = () => {
         return;
       }
 
-      // Show all results (Success/Error/Warning) per barcode
-      const messages = results
-        .map((res) => `${res.barcode}: ${res.message}`)
-        .join("\n");
-      Alert.alert(parsed.Status || "Result", messages);
+      setResultMessages(results);
+      setResultModalVisible(true);
 
-      // Only update and clear if no errors
-      const hasError = results.some((r) => r.status === "Error");
-      if (!hasError) {
-        const undeliveredBarcodes = barcodes.map((b) => b.value);
-        const updatedDelivery = allBarcodes.map((b) =>
-          undeliveredBarcodes.includes(b.value)
-            ? { ...b, status: "undelivered", reasonId }
-            : b
-        );
-        await storeBarcodes(updatedDelivery);
-        await clearUndeliveryBarcodes();
-        setBarcodes([]);
-        setReasonId("");
-      }
+      // ✅ Always clear UI after showing result
+      setBarcodes([]);
+      setReasonId("");
+      await clearUndeliveryBarcodes();
+
+      // Optionally update the delivery list
+      const undeliveredBarcodes = barcodes.map((b) => b.value);
+      const updatedDelivery = allBarcodes.map((b) =>
+        undeliveredBarcodes.includes(b.value)
+          ? { ...b, status: "undelivered", reasonId }
+          : b
+      );
+      await storeBarcodes(updatedDelivery);
     } catch (error) {
       console.error("API call failed:", error);
       Alert.alert(
@@ -199,6 +228,26 @@ const UndeliveryScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.dropdownContainer}>
+        <Text style={styles.dropdownLabel}>Reason for undelivery</Text>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={reasonId}
+            onValueChange={setReasonId}
+            style={styles.picker}
+          >
+            <Picker.Item label="-- Select Reason --" value="" />
+            {ATTEMPT_REASONS.map((reason) => (
+              <Picker.Item
+                key={reason.value}
+                label={reason.label}
+                value={reason.value}
+              />
+            ))}
+          </Picker>
+        </View>
+      </View>
+
       <View style={styles.inputRow}>
         <TextInput
           ref={inputRef}
@@ -245,26 +294,6 @@ const UndeliveryScreen = () => {
         }
       />
 
-      <View style={styles.dropdownContainer}>
-        <Text style={styles.dropdownLabel}>Reason for undelivery</Text>
-        <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={reasonId}
-            onValueChange={setReasonId}
-            style={styles.picker}
-          >
-            <Picker.Item label="-- Select Reason --" value="" />
-            {ATTEMPT_REASONS.map((reason) => (
-              <Picker.Item
-                key={reason.value}
-                label={reason.label}
-                value={reason.value}
-              />
-            ))}
-          </Picker>
-        </View>
-      </View>
-
       <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
         <Text style={styles.sendButtonText}>Send</Text>
       </TouchableOpacity>
@@ -273,6 +302,12 @@ const UndeliveryScreen = () => {
         visible={scanning}
         onClose={() => setScanning(false)}
         onScan={handleScan}
+      />
+
+      <ResultModal
+        visible={resultModalVisible}
+        results={resultMessages}
+        onClose={() => setResultModalVisible(false)}
       />
     </View>
   );
