@@ -21,8 +21,8 @@ import BarcodeScannerModal from "../components/BarcodeScannerModal";
 
 const formFields = [
   { label: "Sender Name", name: "sender_name" },
+  { label: "Sender Mobile No", name: "contact_no" },
   { label: "Receiver Name", name: "receiver_name" },
-  { label: "Contact No", name: "contact_no" },
   { label: "Address 1", name: "address_l1" },
   { label: "Address 2", name: "address_l2" },
   { label: "City 1", name: "city_1" },
@@ -50,25 +50,27 @@ const AcceptanceForm = () => {
   const [userId, setUserId] = useState("");
   const [locationId, setLocationId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [barcodeError, setBarcodeError] = useState("");
+  const [weightError, setWeightError] = useState("");
 
   // Add this missing function for updating form fields
   const updateFormField = (name, value) => {
-    if (name === "barcode") {
-      const isValidBarcode = /^[A-Z]{2}\d{9}LK$/.test(
-        value.trim().toUpperCase()
-      );
-      if (!isValidBarcode) {
-        Alert.alert(
-          "Invalid Barcode",
-          "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
-        );
-        return; // Don't update with invalid barcode
-      }
+    if (name === "contact_no") {
+      value = value.replace(/\D/g, "").slice(0, 10); // max 10 digits
     }
 
-    if (name === "contact_no") {
-      // Only digits, max length 10
-      value = value.replace(/\D/g, "").slice(0, 10);
+    if (name === "barcode") {
+      value = value.toUpperCase().slice(0, 13);
+
+      // live validation
+      const isValid = /^[A-Z]{2}\d{9}LK$/.test(value);
+      if (!isValid && value.length === 13) {
+        setBarcodeError(
+          "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
+        );
+      } else {
+        setBarcodeError(""); // Clear if valid or incomplete
+      }
     }
 
     setFormData((prev) => ({
@@ -99,16 +101,26 @@ const AcceptanceForm = () => {
   useEffect(() => {
     const calculateAmount = () => {
       const weightNum = parseFloat(formData.weight);
+
+      // Do nothing if weight is not a number or is zero/negative
       if (isNaN(weightNum) || weightNum <= 0) {
         setFormData((prev) => ({ ...prev, amount: "" }));
+        setWeightError(""); // Clear any previous error
         return;
       }
 
+      // Show error if weight exceeds 40000
+      if (weightNum > 40000) {
+        setFormData((prev) => ({ ...prev, amount: "" }));
+        setWeightError("Weight cannot exceed 40000 grams.");
+        return;
+      }
+
+      // Valid weight
       const amount = calculatePostage(weightNum, formData.company_type);
       if (amount !== null) {
         setFormData((prev) => ({ ...prev, amount: amount.toFixed(2) }));
-      } else {
-        setFormData((prev) => ({ ...prev, amount: "" }));
+        setWeightError(""); // Clear any previous error
       }
     };
 
@@ -124,13 +136,20 @@ const AcceptanceForm = () => {
 
     const trimmedData = data?.trim();
     if (trimmedData) {
-      updateFormField("barcode", trimmedData);
-      Alert.alert("Success", "Barcode scanned successfully.");
-    } else {
-      Alert.alert(
-        "Invalid Scan",
-        "The scanned barcode is invalid. Please try again."
+      const isValidBarcode = /^[A-Z]{2}\d{9}LK$/.test(
+        trimmedData.toUpperCase()
       );
+      if (!isValidBarcode) {
+        setBarcodeError(
+          "Scanned barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
+        );
+        return;
+      }
+
+      updateFormField("barcode", trimmedData);
+      setBarcodeError(""); // Clear previous error
+    } else {
+      setBarcodeError("The scanned barcode is invalid. Please try again.");
     }
   };
 
@@ -157,6 +176,17 @@ const AcceptanceForm = () => {
       return;
     }
 
+    // ✅ Barcode validation happens here
+    const barcode = formData.barcode.trim().toUpperCase();
+    const isValidBarcode = /^[A-Z]{2}\d{9}LK$/.test(barcode);
+    if (!isValidBarcode) {
+      Alert.alert(
+        "Invalid Barcode",
+        "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
+      );
+      return;
+    }
+
     if (!userId || !locationId) {
       Alert.alert(
         "Error",
@@ -171,6 +201,7 @@ const AcceptanceForm = () => {
         user_id: userId,
         office_id: locationId,
         ...formData,
+        barcode,
       };
 
       const response = await axios.post(
@@ -224,6 +255,19 @@ const AcceptanceForm = () => {
     }
   };
 
+  const validateBarcode = (value) => {
+    const trimmed = value.trim().toUpperCase();
+    const isValid = /^[A-Z]{2}\d{9}LK$/.test(trimmed);
+
+    if (!isValid) {
+      setBarcodeError(
+        "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
+      );
+    } else {
+      setBarcodeError(""); // Clear the error
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -240,6 +284,13 @@ const AcceptanceForm = () => {
             name={name}
             value={formData[name]}
             onChange={updateFormField}
+            keyboardType={name === "contact_no" ? "numeric" : "default"}
+            required={
+              name === "sender_name" ||
+              name === "receiver_name" ||
+              name === "contact_no"
+            }
+            placeholder={name === "contact_no" ? "e.g., 0712345678" : ""}
           />
         ))}
 
@@ -247,6 +298,7 @@ const AcceptanceForm = () => {
           name="company_type"
           value={formData.company_type}
           onChange={updateFormField}
+          required={true}
         />
 
         <FormInput
@@ -255,12 +307,15 @@ const AcceptanceForm = () => {
           value={formData.weight}
           onChange={updateFormField}
           keyboardType="numeric"
+          required={true}
+          errorMessage={weightError}
         />
 
         <FormInput
           label="Postage (Rs)"
           name="amount"
           value={formData.amount}
+          required={true}
           readOnly
         />
 
@@ -272,6 +327,10 @@ const AcceptanceForm = () => {
               value={formData.barcode}
               onChange={updateFormField}
               keyboardType="default"
+              onBlur={() => validateBarcode(formData.barcode)}
+              errorMessage={barcodeError}
+              required={true}
+              placeholder="e.g., XX123456789LK"
             />
           </View>
 
