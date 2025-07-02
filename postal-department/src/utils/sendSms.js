@@ -27,13 +27,16 @@ export const sendSms = async (type, params = {}) => {
   // Construct the SMS based on type
   switch (type) {
     case "slpa": {
-      const { barcode, receiverName, weight, amount } = params;
-      if (!barcode || !receiverName || !weight || !amount) {
-        Alert.alert("Error", "Receiver Name, Weight, and Amount are required.");
+      const { barcode, receiverName, contact_no, weight, amount } = params;
+      if (!barcode || !receiverName || !contact_no || !weight || !amount) {
+        Alert.alert(
+          "Error",
+          "Receiver Name, Contact Number, Weight, and Amount are required."
+        );
         return;
       }
       const formattedName = receiverName.trim().replace(/\s+/g, "_");
-      message = `pec slpa ${barcode} ${formattedName} ${weight} ${amount}`;
+      message = `pec slpa ${barcode} ${formattedName} ${contact_no} ${weight} ${amount}`;
       break;
     }
 

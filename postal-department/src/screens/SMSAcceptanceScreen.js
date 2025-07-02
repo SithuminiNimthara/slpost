@@ -22,6 +22,11 @@ const isValidBarcode = (barcode) => {
   return regex.test(barcode);
 };
 
+const isValidPhoneNumber = (number) => {
+  const phoneRegex = /^[0-9]{10}$/; // 10-digit number
+  return phoneRegex.test(number);
+};
+
 const requestSmsPermission = async () => {
   if (Platform.OS === "android") {
     try {
@@ -46,10 +51,11 @@ const requestSmsPermission = async () => {
 
 const SMSAcceptanceForm = ({ username, locationName }) => {
   const initialFormState = {
+    barcodeNo: "",
     receiverName: "",
+    contact_no: "",
     weight: "",
     amount: "",
-    barcodeNo: "",
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -82,16 +88,23 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
   const updateFormField = (name, value) => {
     setFormData((prevData) => {
       const updatedData = { ...prevData, [name]: value };
-
       setSmsReply(null); // Clear previous reply on input change
 
+      // ✅ Limit contact_no to 10 digits
+      if (name === "contact_no") {
+        const digitsOnly = value.replace(/\D/g, ""); // Remove non-numeric characters
+        if (digitsOnly.length > 10) return prevData; // Prevent update if over 10
+        updatedData.contact_no = digitsOnly;
+      }
+
+      // ✅ Handle weight -> amount auto-calculation
       if (name === "weight") {
         const weight = parseFloat(value);
-
         if (!isNaN(weight)) {
           if (weight > 40000) {
-            Alert.alert("Error", "Maximum allowed weight is 40kg.");
-            updatedData.amount = "";
+            Alert.alert("Error", "Maximum allowed weight is 40000g.");
+            updatedData.weight = "40000";
+            updatedData.amount = calculatePostage(40000).toString();
           } else if (weight > 0) {
             const postage = calculatePostage(weight);
             updatedData.amount =
@@ -104,7 +117,6 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
         }
       }
 
-      // (Optional) Validate barcode as user types
       if (name === "barcodeNo" && value.length >= 13) {
         const barcode = value.toUpperCase();
         if (!isValidBarcode(barcode)) {
@@ -126,8 +138,11 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
     if (
       !barcode ||
       !formData.receiverName ||
+      !formData.contact_no ||
       !formData.weight ||
-      !formData.amount
+      !formData.amount ||
+      !formData.username ||
+      !formData.locationName
     ) {
       Alert.alert("Error", "All fields are required!");
       return;
@@ -146,6 +161,11 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
       return;
     }
 
+    if (!isValidPhoneNumber(formData.senderContact)) {
+      Alert.alert("Invalid Contact", "Enter a valid 10-digit mobile number.");
+      return;
+    }
+
     const hasPermission = await requestSmsPermission();
     if (!hasPermission) {
       Alert.alert("Permission Denied", "SMS permission is required.");
@@ -158,6 +178,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
         receiverName: formData.receiverName,
         weight: formData.weight,
         amount: formData.amount,
+        senderContact: formData.senderContact,
         username,
         locationName,
       });
@@ -188,8 +209,6 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <Text style={styles.title}>SMS Acceptance Form</Text>
-
       <View style={styles.barcodeContainer}>
         <View style={{ flex: 1, marginRight: 20 }}>
           <FormInput
@@ -197,6 +216,7 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
             name="barcodeNo"
             value={formData.barcodeNo}
             onChange={updateFormField}
+            placeholder="e.g., XX123456789LK"
           />
         </View>
 
@@ -210,6 +230,15 @@ const SMSAcceptanceForm = ({ username, locationName }) => {
         name="receiverName"
         value={formData.receiverName}
         onChange={updateFormField}
+      />
+
+      <FormInput
+        label="Sender Mobile Number"
+        name="contact_no"
+        value={formData.contact_no}
+        onChange={updateFormField}
+        keyboardType="phone-pad"
+        placeholder="e.g., 0712345678"
       />
 
       <FormInput

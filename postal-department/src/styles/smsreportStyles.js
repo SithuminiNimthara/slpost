@@ -58,7 +58,8 @@ const styles = StyleSheet.create({
   },
   submitButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   responseBox: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#9C1D1D",
+    
     borderRadius: 8,
     padding: 20,
     marginTop: 30,

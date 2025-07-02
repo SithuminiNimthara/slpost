@@ -75,7 +75,7 @@ const SmsTrackingScreen = () => {
       {loading && (
         <ActivityIndicator
           size="large"
-          color="#0000ff"
+          color="#9C1D1D"
           style={{ marginTop: 10 }}
         />
       )}
@@ -113,9 +113,19 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     marginVertical: 5,
-    backgroundColor: "#e3f2fd",
+    backgroundColor: "#9c1d1d",
+    color: "#fff",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    borderLeftStyle: "solid",
     borderLeftWidth: 4,
-    borderLeftColor: "#2196f3",
+    borderLeftColor: "#9C1D1D",
   },
   timestamp: {
     fontSize: 12,
@@ -124,7 +134,7 @@ const styles = StyleSheet.create({
   },
   fullMessage: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: 18,
     color: "#333",
   },
 });
