@@ -1,9 +1,16 @@
 import React, { useState, useContext } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Button,
+} from "react-native";
 import { AuthContext } from "../context/AuthContext";
 import styles from "../styles/loginStyles";
 
-const Login = () => {
+const Login = ({ navigation }) => {
   const { login } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -22,9 +29,7 @@ const Login = () => {
   return (
     <View style={styles.container}>
       <Image source={require("../assets/sl-post.png")} style={styles.logo} />
-
       <Text style={styles.title}>Login to Postal Department</Text>
-
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <TextInput
         style={styles.input}
@@ -43,6 +48,19 @@ const Login = () => {
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
+
+      <View
+        style={{
+          height: 30,
+        }}
+      />
+
+      {/* Navigate to SMS Menu */}
+      <Button
+        title="Use SMS Features"
+        onPress={() => navigation.navigate("SMSStack")}
+        color="#9C1D1D"
+      />
     </View>
   );
 };

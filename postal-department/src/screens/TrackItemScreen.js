@@ -9,7 +9,6 @@ import {
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import BarcodeInput from "../components/BarcodeInput";
 import { fetchItemDetails } from "../utils/api";
-import eventMapping from "../utils/eventMapping";
 
 const TrackItem = () => {
   const [barcode, setBarcode] = useState("");
@@ -18,14 +17,20 @@ const TrackItem = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Handle barcode input change (no validation)
+  const handleBarcodeChange = (value) => {
+    setBarcode(value.toUpperCase());
+  };
+
   // Handle barcode scan event
   const handleBarCodeScanned = (scannedData) => {
     if (!scannedData || scannedData.trim() === "") {
       setError("Invalid barcode scanned. Please try again.");
       return;
     }
-    setBarcode(scannedData);
-    fetchDetails(scannedData);
+    const upperScanned = scannedData.toUpperCase();
+    setBarcode(upperScanned);
+    fetchDetails(upperScanned);
     setModalVisible(false);
   };
 
@@ -33,17 +38,19 @@ const TrackItem = () => {
   const fetchDetails = async (code) => {
     setLoading(true);
     setError("");
+    setItemDetails([]);
     await fetchItemDetails(code, setItemDetails, setError);
     setLoading(false);
   };
 
-  // Fetch item details manually
+  // Fetch item details manually (no validation)
   const handleFetchItemDetails = () => {
-    if (barcode.trim()) {
-      fetchDetails(barcode);
-    } else {
+    if (!barcode.trim()) {
       setError("Please enter a barcode to track the item.");
+      return;
     }
+    setError("");
+    fetchDetails(barcode);
   };
 
   return (
@@ -51,9 +58,11 @@ const TrackItem = () => {
       {/* Barcode Input Field */}
       <BarcodeInput
         barcode={barcode}
-        setBarcode={setBarcode}
+        setBarcode={handleBarcodeChange}
         onTrack={handleFetchItemDetails}
         onScan={() => setModalVisible(true)}
+        errorMessage={""} // No validation error
+        
       />
 
       {/* Error Message */}
@@ -78,7 +87,6 @@ const TrackItem = () => {
               <Text style={styles.eventTitle}>
                 Event {item.Eventid}: {item.EventName}
               </Text>
-
               <Text style={styles.detail}>Date & Time: {item.Tdatetime}</Text>
               <Text style={styles.detail}>Location: {item.location_name}</Text>
             </View>

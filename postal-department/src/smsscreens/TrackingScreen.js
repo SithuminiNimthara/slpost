@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import BarcodeInput from "../components/BarcodeInput";
-import { sendSms } from "../utils/sendSms";
+import { sendSms } from "../utils/sendSLPMailSms";
 
 const SmsTrackingScreen = () => {
   const [barcode, setBarcode] = useState("");
@@ -17,7 +17,6 @@ const SmsTrackingScreen = () => {
   const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Parse the SMS reply text to extract useful info
   const parseTrackingSms = (smsText) => {
     return {
       fullMessage: smsText,
@@ -25,8 +24,10 @@ const SmsTrackingScreen = () => {
   };
 
   const handleSendTrackingRequest = async () => {
-    if (!barcode) {
-      Alert.alert("Error", "Please enter or scan a barcode");
+    const trimmedBarcode = barcode.trim().toUpperCase();
+
+    if (!trimmedBarcode) {
+      Alert.alert("Input Error", "Please enter or scan a barcode.");
       return;
     }
 
@@ -34,7 +35,7 @@ const SmsTrackingScreen = () => {
 
     try {
       const trackingSms = await sendSms("slpt", {
-        barcode: barcode.toUpperCase(),
+        barcode: trimmedBarcode,
       });
 
       if (trackingSms && trackingSms.fullMessage) {
@@ -114,7 +115,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 5,
     backgroundColor: "#9c1d1d",
-    color: "#fff",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -123,19 +123,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    borderLeftStyle: "solid",
     borderLeftWidth: 4,
     borderLeftColor: "#9C1D1D",
   },
   timestamp: {
     fontSize: 12,
-    color: "#555",
+    color: "#fff",
     marginBottom: 5,
   },
   fullMessage: {
     marginTop: 10,
     fontSize: 18,
-    color: "#333",
+    color: "#fff",
   },
 });
 

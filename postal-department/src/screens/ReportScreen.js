@@ -142,7 +142,7 @@ const ReportScreen = () => {
           {userName + " : " + apiStartDate + " to " + apiEndDate + " Report"}
         </Text>
         {renderTable(
-          ["Accept Qty", "Accept Amount(Rs:)", "Delivery Qty"],
+          ["Accepted Qty", "Accepted Amount(Rs:)", "Delivered Qty"],
           [
             result.accept_qty_user,
             result.accept_amount_user,
@@ -159,7 +159,7 @@ const ReportScreen = () => {
             " All Report"}
         </Text>
         {renderTable(
-          ["Accept Qty", "Accept Amount(Rs:)", "Delivery Qty"],
+          ["Accepted Qty", "Accepted Amount(Rs:)", "Delivered Qty"],
           [result.accept_qty, result.accept_amount, result.dly_qty]
         )}
       </View>

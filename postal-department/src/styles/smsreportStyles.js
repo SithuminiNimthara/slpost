@@ -58,14 +58,15 @@ const styles = StyleSheet.create({
   },
   submitButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   responseBox: {
-    backgroundColor: "#9C1D1D",
-    
+    backgroundColor: "#914c4cff",
+    borderColor: "#9C1D1D",
     borderRadius: 8,
     padding: 20,
     marginTop: 30,
+    opacity: 0.9,
   },
   responseLabel: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-  responseText: { fontSize: 16, color: "#333" },
+  responseText: { fontSize: 16, color: "#fff" },
 });
 
 export default styles;

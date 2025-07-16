@@ -115,7 +115,7 @@ const UndeliveryScreen = () => {
     storeUndeliveryBarcodes(barcodes);
   }, [barcodes]);
 
-  const validateAndAddBarcode = (code) => {
+  const addBarcode = (code) => {
     const barcode = code.trim().toUpperCase();
     if (!barcode) return;
 
@@ -133,13 +133,13 @@ const UndeliveryScreen = () => {
   };
 
   const handleAddBarcode = () => {
-    validateAndAddBarcode(barcodeInput);
+    addBarcode(barcodeInput);
   };
 
   const handleScan = (data) => {
     setScanning(false);
     if (data) {
-      validateAndAddBarcode(data);
+      addBarcode(data);
     }
   };
 
@@ -203,13 +203,10 @@ const UndeliveryScreen = () => {
 
       setResultMessages(results);
       setResultModalVisible(true);
-
-      // ✅ Always clear UI after showing result
       setBarcodes([]);
       setReasonId("");
       await clearUndeliveryBarcodes();
 
-      // Optionally update the delivery list
       const undeliveredBarcodes = barcodes.map((b) => b.value);
       const updatedDelivery = allBarcodes.map((b) =>
         undeliveredBarcodes.includes(b.value)
@@ -229,7 +226,9 @@ const UndeliveryScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.dropdownContainer}>
-        <Text style={styles.dropdownLabel}>Reason for undelivery</Text>
+        <Text style={styles.dropdownLabel}>
+          Reason for undelivery <Text style={{ color: "red" }}>*</Text>
+        </Text>
         <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={reasonId}
@@ -254,7 +253,8 @@ const UndeliveryScreen = () => {
           style={styles.input}
           placeholder="Barcode"
           value={barcodeInput}
-          onChangeText={setBarcodeInput}
+          maxLength={13}
+          onChangeText={(text) => setBarcodeInput(text)}
           returnKeyType="done"
           onSubmitEditing={handleAddBarcode}
         />

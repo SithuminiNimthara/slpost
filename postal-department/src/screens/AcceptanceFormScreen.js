@@ -50,27 +50,16 @@ const AcceptanceForm = () => {
   const [userId, setUserId] = useState("");
   const [locationId, setLocationId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [barcodeError, setBarcodeError] = useState("");
   const [weightError, setWeightError] = useState("");
 
-  // Add this missing function for updating form fields
   const updateFormField = (name, value) => {
     if (name === "contact_no") {
       value = value.replace(/\D/g, "").slice(0, 10); // max 10 digits
     }
 
     if (name === "barcode") {
-      value = value.toUpperCase().slice(0, 13);
-
-      // live validation
-      const isValid = /^[A-Z]{2}\d{9}LK$/.test(value);
-      if (!isValid && value.length === 13) {
-        setBarcodeError(
-          "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
-        );
-      } else {
-        setBarcodeError(""); // Clear if valid or incomplete
-      }
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      return;
     }
 
     setFormData((prev) => ({
@@ -102,33 +91,27 @@ const AcceptanceForm = () => {
     const calculateAmount = () => {
       const weightNum = parseFloat(formData.weight);
 
-      // Do nothing if weight is not a number or is zero/negative
       if (isNaN(weightNum) || weightNum <= 0) {
         setFormData((prev) => ({ ...prev, amount: "" }));
-        setWeightError(""); // Clear any previous error
+        setWeightError("");
         return;
       }
 
-      // Show error if weight exceeds 40000
       if (weightNum > 40000) {
         setFormData((prev) => ({ ...prev, amount: "" }));
         setWeightError("Weight cannot exceed 40000 grams.");
         return;
       }
 
-      // Valid weight
       const amount = calculatePostage(weightNum, formData.company_type);
       if (amount !== null) {
         setFormData((prev) => ({ ...prev, amount: amount.toFixed(2) }));
-        setWeightError(""); // Clear any previous error
+        setWeightError("");
       }
     };
 
     calculateAmount();
   }, [formData.weight, formData.company_type]);
-
-  const formatFieldName = (field) =>
-    field.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
 
   const handleBarCodeScanned = (data) => {
     if (!scanning) return;
@@ -136,20 +119,12 @@ const AcceptanceForm = () => {
 
     const trimmedData = data?.trim();
     if (trimmedData) {
-      const isValidBarcode = /^[A-Z]{2}\d{9}LK$/.test(
-        trimmedData.toUpperCase()
-      );
-      if (!isValidBarcode) {
-        setBarcodeError(
-          "Scanned barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
-        );
-        return;
-      }
-
       updateFormField("barcode", trimmedData);
-      setBarcodeError(""); // Clear previous error
     } else {
-      setBarcodeError("The scanned barcode is invalid. Please try again.");
+      Alert.alert(
+        "Scan Failed",
+        "The scanned barcode is invalid. Please try again."
+      );
     }
   };
 
@@ -176,17 +151,6 @@ const AcceptanceForm = () => {
       return;
     }
 
-    // ✅ Barcode validation happens here
-    const barcode = formData.barcode.trim().toUpperCase();
-    const isValidBarcode = /^[A-Z]{2}\d{9}LK$/.test(barcode);
-    if (!isValidBarcode) {
-      Alert.alert(
-        "Invalid Barcode",
-        "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
-      );
-      return;
-    }
-
     if (!userId || !locationId) {
       Alert.alert(
         "Error",
@@ -194,6 +158,8 @@ const AcceptanceForm = () => {
       );
       return;
     }
+
+    const barcode = formData.barcode.trim(); // No validation
 
     setLoading(true);
     try {
@@ -255,23 +221,12 @@ const AcceptanceForm = () => {
     }
   };
 
-  const validateBarcode = (value) => {
-    const trimmed = value.trim().toUpperCase();
-    const isValid = /^[A-Z]{2}\d{9}LK$/.test(trimmed);
-
-    if (!isValid) {
-      setBarcodeError(
-        "Barcode must be 13 characters: 2 letters + 9 digits + 'LK'."
-      );
-    } else {
-      setBarcodeError(""); // Clear the error
-    }
-  };
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      keyboardShouldPersistTaps="handled"
     >
       <ScrollView
         style={styles.container}
@@ -327,10 +282,10 @@ const AcceptanceForm = () => {
               value={formData.barcode}
               onChange={updateFormField}
               keyboardType="default"
-              onBlur={() => validateBarcode(formData.barcode)}
-              errorMessage={barcodeError}
+              autoCapitalize="characters"
               required={true}
               placeholder="e.g., XX123456789LK"
+              maxLength={13}
             />
           </View>
 

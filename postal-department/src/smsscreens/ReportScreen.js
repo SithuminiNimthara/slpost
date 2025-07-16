@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { sendSms } from "../utils/sendSms";
+import { sendSms } from "../utils/sendSLPMailSms";
 import moment from "moment";
 import styles from "../styles/smsreportStyles";
 
@@ -71,8 +71,6 @@ const SMSReportScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>SMS Report</Text>
-
       <View style={styles.checkBoxGroup}>
         {REPORT_TYPES.map((type) => (
           <TouchableOpacity

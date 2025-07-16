@@ -40,7 +40,13 @@ export const AuthProvider = ({ children }) => {
         };
         await AsyncStorage.setItem("user_data", JSON.stringify(userData));
         setUser(userData);
-        alert(`Welcome! Login successful.\n${userData.Name} as ${userData.privilege} logged to ${userData.Location}.`);
+        alert(
+          `Welcome! Login successful.\n${
+            userData.Name
+          } as ${userData.privilege.toUpperCase()} logged to ${
+            userData.Location
+          }.`
+        );
       } else if (data.Error === "Invalid username") {
         setUser(null);
         alert("Invalid username");
@@ -66,7 +72,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ login, logout, isLoading, isAppReady, user }}>
+    <AuthContext.Provider
+      value={{ login, logout, isLoading, isAppReady, user }}
+    >
       {children}
     </AuthContext.Provider>
   );

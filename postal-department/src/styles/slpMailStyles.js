@@ -15,7 +15,7 @@ const styles = StyleSheet.create({
     marginTop: -20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    padding: 10,
   },
   gridContainer: {
     flexDirection: "row",
@@ -30,6 +30,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#eee",
     margin: 10,
     padding: 25,
+    borderWidth: 1,
+    borderColor: "#ccc",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
@@ -40,9 +42,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   gridText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#9C1D1D",
+    marginTop: 10,
+    textAlign: "center",
   },
   separator: {
     borderBottomWidth: 1,

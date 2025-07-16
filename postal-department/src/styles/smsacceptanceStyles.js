@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "#fff",
     padding: 15,
   },
   title: {
@@ -11,7 +11,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
-    color: "#333",
+    color: "#9C1D1D",
   },
   barcodeContainer: {
     flexDirection: "row",
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#B03A3A", // lighter red shade
     fontSize: 16,
   },
   button: {
@@ -46,33 +46,41 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    color: "#333",
+    color: "#9C1D1D",
     marginBottom: 5,
   },
   input: {
     height: 40,
-    borderColor: "#ccc",
+    borderColor: "#B03A3A", // softer border red
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
     fontSize: 16,
+    backgroundColor: "#fff",
+  },
+  readOnlyInput: {
+    backgroundColor: "#f9f0f0", // soft red-gray for read-only fields
+  },
+  errorText: {
+    color: "#B00020", // deep red for errors
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 2,
   },
   replyContainer: {
-    backgroundColor: "#e1f5fe",
+    backgroundColor: "#FBEAEA", // very light red background
     padding: 15,
     marginTop: 20,
     borderRadius: 10,
-    borderColor: "#0288d1",
+    borderColor: "#9C1D1D",
     borderWidth: 1,
   },
-
   replyTitle: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#01579b",
+    color: "#9C1D1D",
     marginBottom: 10,
   },
-
   replyText: {
     fontSize: 15,
     lineHeight: 22,

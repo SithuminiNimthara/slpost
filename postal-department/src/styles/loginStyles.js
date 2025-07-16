@@ -38,17 +38,11 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
   },
-  forgotPassword: {
-    color: "#9C1D1D",
-    fontSize: 12,
-    marginBottom: 20,
-    marginTop: 10,
-    textDecorationLine: "underline",
-  },
   errorText: {
     color: "red",
     marginBottom: 10,
     fontWeight: "bold",
   },
+  
 });
 export default styles;

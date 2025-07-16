@@ -87,7 +87,7 @@ const DeliveryScreen = () => {
     setBarcodes(stored.filter((b) => b.status === "pending"));
   };
 
-  const validateAndAddBarcode = async (code) => {
+  const addBarcode = async (code) => {
     const barcode = code.trim().toUpperCase();
     if (!barcode) return;
 
@@ -109,13 +109,13 @@ const DeliveryScreen = () => {
   };
 
   const handleAddBarcode = () => {
-    validateAndAddBarcode(barcodeInput);
+    addBarcode(barcodeInput);
   };
 
   const handleScan = (data) => {
     setScanning(false);
     if (data) {
-      validateAndAddBarcode(data);
+      addBarcode(data);
     }
   };
 
@@ -193,7 +193,6 @@ const DeliveryScreen = () => {
       setResultMessages(results);
       setResultModalVisible(true);
 
-      // ✅ Clear inputs & barcodes
       const stored = await loadBarcodes();
       const updated = stored.map((b) =>
         barcodes.some((item) => item.value === b.value)
@@ -265,6 +264,7 @@ const DeliveryScreen = () => {
           onChangeText={setBarcodeInput}
           returnKeyType="done"
           onSubmitEditing={handleAddBarcode}
+          maxLength={13}
         />
         <TouchableOpacity
           style={styles.scanButton}

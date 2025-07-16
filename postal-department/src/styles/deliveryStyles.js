@@ -27,14 +27,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 10,
+    
     justifyContent: "space-between",
   },
   input: {
     flex: 1,
-    height: 46,
+    height: 56,
     fontSize: 16,
-    backgroundColor: "transparent",
+   
   },
+
   scanButton: {
     padding: 8,
   },
@@ -154,6 +156,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    marginTop: 4,
+    marginBottom: 6,
   },
 });
 

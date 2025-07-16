@@ -8,7 +8,13 @@ import {
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-const BarcodeInput = ({ barcode, setBarcode, onTrack, onScan }) => {
+const BarcodeInput = ({
+  barcode,
+  setBarcode,
+  onTrack,
+  onScan,
+  errorMessage,
+}) => {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Enter Barcode</Text>
@@ -18,15 +24,25 @@ const BarcodeInput = ({ barcode, setBarcode, onTrack, onScan }) => {
 
       <View style={styles.inputRow}>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            errorMessage ? { borderColor: "red", borderWidth: 1 } : null,
+          ]}
           placeholder="Scan or enter barcode"
           value={barcode}
           onChangeText={setBarcode}
+          autoCapitalize="characters"
+          maxLength={13}
         />
         <TouchableOpacity style={styles.trackButton} onPress={onTrack}>
           <Text style={styles.trackButtonText}>Track</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Error Message */}
+      {errorMessage ? (
+        <Text style={styles.errorMessage}>{errorMessage}</Text>
+      ) : null}
     </View>
   );
 };
@@ -49,6 +65,11 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   trackButtonText: { color: "white", fontWeight: "bold" },
+  errorMessage: {
+    color: "red",
+    marginTop: 5,
+    fontSize: 13,
+  },
 });
 
 export default BarcodeInput;

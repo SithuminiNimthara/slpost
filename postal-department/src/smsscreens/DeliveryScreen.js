@@ -7,9 +7,10 @@ import {
   Text,
   PermissionsAndroid,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { sendSms } from "../utils/sendSms";
+import { sendSms } from "../utils/sendSLPMailSms";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import styles from "../styles/smsdeliveryStyles";
 
@@ -43,38 +44,27 @@ const SMSDelivery = ({ username, locationName }) => {
   const [formData, setFormData] = useState({ barcodeNo: "" });
   const [scanning, setScanning] = useState(false);
   const [smsReply, setSmsReply] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     const barcode = formData.barcodeNo.trim().toUpperCase();
-    console.log("Submit pressed. Barcode:", barcode);
 
-    // Validate barcode format
     if (!barcode) {
       Alert.alert("Error", "Barcode number is required!");
       return;
     }
 
-    if (!/^[A-Z]{2}\d{9}LK$/.test(barcode)) {
-      Alert.alert(
-        "Invalid Barcode",
-        "Barcode must be in format: 2 letters + 9 digits + LK"
-      );
-      return;
-    }
-
-    const hasPermission = await requestSmsPermission();
-    console.log("SMS Permission granted:", hasPermission);
-
-    if (!hasPermission) {
-      Alert.alert("Permission Denied", "SMS permission is required.");
-      return;
-    }
+    setLoading(true); // Start loading immediately
 
     try {
-      console.log("Calling sendSms with type 'slpd'...");
-      const response = await sendSms("slpd", { barcode });
+      const hasPermission = await requestSmsPermission();
 
-      console.log("SMS Delivery Response:", response);
+      if (!hasPermission) {
+        Alert.alert("Permission Denied", "SMS permission is required.");
+        return;
+      }
+
+      const response = await sendSms("slpd", { barcode });
 
       if (response && response.status === "success" && response.fullMessage) {
         setSmsReply(response.fullMessage);
@@ -92,6 +82,8 @@ const SMSDelivery = ({ username, locationName }) => {
       } else {
         Alert.alert("Error", "Delivery SMS failed to send.");
       }
+    } finally {
+      setLoading(false); // Stop loading after finished
     }
   };
 
@@ -116,17 +108,28 @@ const SMSDelivery = ({ username, locationName }) => {
           placeholder="Enter barcode number"
           value={formData.barcodeNo}
           onChangeText={(text) => setFormData({ ...formData, barcodeNo: text })}
+          autoCapitalize="characters"
+          maxLength={13}
+          editable={!loading} // disable input while loading
         />
-        <TouchableOpacity onPress={() => setScanning(true)}>
+        <TouchableOpacity onPress={() => !loading && setScanning(true)}>
           <MaterialCommunityIcons name="barcode-scan" size={30} color="black" />
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Send SMS</Text>
+      <TouchableOpacity
+        style={[styles.button, loading && { backgroundColor: "#9C1D1D" }]}
+        onPress={handleSubmit}
+        disabled={loading} // disable button while loading
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Send SMS</Text>
+        )}
       </TouchableOpacity>
 
-      {smsReply && (
+      {smsReply && !loading && (
         <View style={styles.replyContainer}>
           <Text style={styles.replyLabel}>Reply Message:</Text>
           <Text style={styles.replyText}>{smsReply}</Text>

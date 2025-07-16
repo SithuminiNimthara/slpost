@@ -13,7 +13,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 30, // Adjusted space below the title
     color: "#333",
-  },
+  }, 
   input: {
     height: 50, // Increased height for better interaction
     borderWidth: 1,
@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     marginTop: 40, // More space from other elements
-  },
+  }, 
   buttonText: {
     color: "#fff",
     fontSize: 18, // Slightly larger font for button text
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   replyContainer: {
     marginTop: 20,
     padding: 15,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#9C1D1D",
     borderRadius: 10,
   },
 
@@ -59,12 +59,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     marginBottom: 8,
+    color: "#fff",
   },
 
   replyText: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#333",
+    color: "#fff",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
 

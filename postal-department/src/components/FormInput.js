@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, TextInput } from "react-native";
 import styles from "../styles/formStyles";
-
 const FormInput = ({
   label,
   name,
@@ -11,16 +10,14 @@ const FormInput = ({
   readOnly,
   required = false,
   errorMessage = "",
-  placeholder, // ✅ add placeholder prop
+  placeholder,
+  autoCapitalize = "none", // ✅ default to "none"
 }) => (
-  <View style={styles.inputContainer}> 
-    {/* Label with red asterisk */}
+  <View style={styles.inputContainer}>
     <Text style={styles.label}>
       {label}
       {required && <Text style={{ color: "red" }}> *</Text>}:
     </Text>
-
-    {/* Input field */}
     <TextInput
       style={[
         styles.input,
@@ -30,11 +27,11 @@ const FormInput = ({
       onChangeText={(text) => onChange(name, text)}
       keyboardType={keyboardType || "default"}
       editable={!readOnly}
-      placeholder={placeholder} // ✅ pass placeholder here
-      placeholderTextColor="#999" // ✅ optional: for visibility
+      placeholder={placeholder}
+      placeholderTextColor="#999"
+      autoCorrect={false}
+      autoCapitalize={autoCapitalize} // ✅ dynamic
     />
-
-    {/* Optional error message below input */}
     {errorMessage ? (
       <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
         {errorMessage}

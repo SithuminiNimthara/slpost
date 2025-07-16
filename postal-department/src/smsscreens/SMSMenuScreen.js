@@ -2,44 +2,32 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
-const Dashboard = ({ navigation }) => {
+const SMSMenuScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.gridContainer}>
           <TouchableOpacity
             style={styles.gridItem}
-            onPress={() => navigation.navigate("SLPMail")}
+            onPress={() => navigation.navigate("SLPMailSMS")}
           >
             <FontAwesome5 name="envelope" size={45} color="#9C1D1D" />
             <Text style={styles.gridText}>SLP Mail</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
+
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate("SMSECounter")}
+          >
             <FontAwesome5 name="desktop" size={45} color="#9C1D1D" />
             <Text style={styles.gridText}>E Counter</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-            <FontAwesome5 name="building" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>Branch Management</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-            <FontAwesome5 name="users" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>Customer Service</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-            <FontAwesome5 name="chart-bar" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>Analytics</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.gridItem} onPress={() => {}}>
-            <FontAwesome5 name="cogs" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>Operations</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.gridItem}
-            onPress={() => navigation.navigate("Settings")}
+            onPress={() => navigation.navigate("SMSEPay")}
           >
-            <FontAwesome5 name="wrench" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>Settings</Text>
+            <FontAwesome5 name="money-check-alt" size={45} color="#9C1D1D" />
+            <Text style={styles.gridText}>E Pay</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -83,12 +71,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   gridText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#9C1D1D",
-    marginTop: 10,
-    textAlign: "center",
   },
 });
 
-export default Dashboard;
+export default SMSMenuScreen;
