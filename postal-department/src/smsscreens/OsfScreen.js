@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,25 +7,59 @@ import {
   Alert,
   StyleSheet,
   ScrollView,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { format, subDays } from "date-fns";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { format } from "date-fns"; // install with: npm install date-fns
-
-const OFFENCE_LIST = Array.from({ length: 33 }, (_, i) => (i + 1).toString());
+import OffenceMap from "../components/OffenceMap";
+import { OFFENCE_VALUES } from "../utils/offenceMap";
+import styles from "../styles/smsosfStyles";
 
 const OSFSmsScreen = () => {
-  const [vehicleNo, setVehicleNo] = useState("");
+  const [drivingLicenseNo, setdrivingLicenseNo] = useState("");
   const [selectedOffences, setSelectedOffences] = useState([]);
   const [offenceDate, setOffenceDate] = useState("");
   const [policeCode, setPoliceCode] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
+  const [customerMobile, setCustomerMobile] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  useEffect(() => {
+    const calculateTotalWithCharge = () => {
+      let baseTotal = selectedOffences.reduce(
+        (sum, id) => sum + (OFFENCE_VALUES[id] || 0),
+        0
+      );
+
+      if (!offenceDate) {
+        return baseTotal.toString();
+      }
+
+      const offence = new Date(`${new Date().getFullYear()}-${offenceDate}`);
+      const today = new Date();
+      const diffInDays = Math.ceil(
+        Math.abs(today - offence) / (1000 * 60 * 60 * 24)
+      );
+
+      if (diffInDays <= 14) {
+        const total = baseTotal + 0.1 * baseTotal;
+        return Math.round(total).toString();
+      } else if (diffInDays <= 28) {
+        const doubled = baseTotal * 2;
+        const total = doubled + 0.1 * doubled;
+        return Math.round(total).toString();
+      } else {
+        // Outside allowed range — fallback
+        return baseTotal.toString();
+      }
+    };
+
+    const updatedTotal = calculateTotalWithCharge();
+    setTotalAmount(updatedTotal);
+  }, [selectedOffences, offenceDate]);
 
   const toggleOffence = (number) => {
     setSelectedOffences((prev) =>
@@ -37,11 +71,12 @@ const OSFSmsScreen = () => {
 
   const handleSubmit = async () => {
     if (
-      !vehicleNo ||
+      !drivingLicenseNo ||
       selectedOffences.length === 0 ||
       !offenceDate ||
       !policeCode ||
-      !totalAmount
+      !totalAmount ||
+      !customerMobile
     ) {
       Alert.alert("Error", "All fields are required.");
       return;
@@ -55,41 +90,35 @@ const OSFSmsScreen = () => {
     const offences = selectedOffences.join(",");
 
     try {
-      // const response = await sendSms("osf", {
-      //   vehicleNo,
-      //   offences,
-      //   offenceDate,
-      //   policeCode,
-      //   totalAmount,
-      // });
+      await sendSms("osf", {
+        drivingLicenseNo,
+        offences,
+        offenceDate,
+        policeCode,
+        amount: totalAmount,
+        mobile: customerMobile,
+      });
+
       Alert.alert("Success", "SMS sent. Awaiting reply.");
     } catch (error) {
       Alert.alert("Error", "Failed to send SMS.");
     }
   };
 
-  const renderOffenceItem = ({ item }) => {
-    const selected = selectedOffences.includes(item);
-    return (
-      <TouchableOpacity
-        style={[styles.offenceItem, selected && styles.offenceItemSelected]}
-        onPress={() => toggleOffence(item)}
-      >
-        <MaterialIcons
-          name={selected ? "check-box" : "check-box-outline-blank"}
-          size={24}
-          color={selected ? "#9C1D1D" : "#777"}
-        />
-        <Text style={styles.offenceText}>Offence {item}</Text>
-      </TouchableOpacity>
-    );
-  };
-
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      const formatted = format(selectedDate, "MM-dd"); // → e.g., "07-04"
-      setOffenceDate(formatted);
+      const today = new Date();
+      const pastLimit = subDays(today, 28);
+      if (selectedDate >= pastLimit && selectedDate <= today) {
+        const formatted = format(selectedDate, "MM-dd");
+        setOffenceDate(formatted);
+      } else {
+        Alert.alert(
+          "Invalid Date",
+          "Only dates within the past 28 days are allowed."
+        );
+      }
     }
   };
 
@@ -103,12 +132,12 @@ const OSFSmsScreen = () => {
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.card}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Vehicle Number</Text>
+              <Text style={styles.label}>Driving License Number</Text>
               <TextInput
                 style={styles.input}
-                value={vehicleNo}
-                onChangeText={setVehicleNo}
-                placeholder="e.g., CAA1234"
+                value={drivingLicenseNo}
+                onChangeText={setdrivingLicenseNo}
+                placeholder="e.g., A12345"
                 autoCapitalize="characters"
                 placeholderTextColor="#999"
               />
@@ -117,13 +146,10 @@ const OSFSmsScreen = () => {
             <Text style={[styles.label, { marginTop: 16 }]}>
               Select Offence Number(s)
             </Text>
-            <FlatList
-              data={OFFENCE_LIST}
-              renderItem={renderOffenceItem}
-              keyExtractor={(item) => item}
-              numColumns={3}
-              scrollEnabled={false}
-              contentContainerStyle={styles.offenceList}
+
+            <OffenceMap
+              selectedOffences={selectedOffences}
+              onToggle={toggleOffence}
             />
 
             <View style={styles.inputGroup}>
@@ -144,6 +170,8 @@ const OSFSmsScreen = () => {
                   mode="date"
                   display="default"
                   onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  minimumDate={subDays(new Date(), 28)}
                 />
               )}
             </View>
@@ -157,6 +185,7 @@ const OSFSmsScreen = () => {
                 placeholder="Enter Police Code"
                 placeholderTextColor="#999"
                 autoCapitalize="characters"
+                maxLength={4}
               />
             </View>
 
@@ -165,10 +194,58 @@ const OSFSmsScreen = () => {
               <TextInput
                 style={styles.input}
                 value={totalAmount}
-                onChangeText={setTotalAmount}
-                placeholder="e.g., 5000"
+                editable={false}
+                placeholder="Auto-calculated"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
+              />
+              {/* Show breakdown if offences selected */}
+              {selectedOffences.length > 0 && totalAmount && (
+                <Text style={styles.breakdownText}>
+                  {(() => {
+                    const baseTotal = selectedOffences.reduce(
+                      (sum, id) => sum + (OFFENCE_VALUES[id] || 0),
+                      0
+                    );
+                    const total = parseFloat(totalAmount);
+                    const diff = total - baseTotal;
+
+                    const offence = new Date(
+                      `${new Date().getFullYear()}-${offenceDate}`
+                    );
+                    const today = new Date();
+                    const diffInDays = Math.ceil(
+                      Math.abs(today - offence) / (1000 * 60 * 60 * 24)
+                    );
+
+                    if (diffInDays <= 14) {
+                      return `Base: Rs ${baseTotal} + Fee: Rs ${Math.round(
+                        0.1 * baseTotal
+                      )} (10% late fee)`;
+                    } else if (diffInDays <= 28) {
+                      const doubled = baseTotal * 2;
+                      const extra = 0.1 * doubled;
+                      return `Base x2: Rs ${doubled} + Fee: Rs ${Math.round(
+                        extra
+                      )} (10% on doubled)`;
+                    } else {
+                      return `Base: Rs ${baseTotal}`;
+                    }
+                  })()}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Customer Mobile Number</Text>
+              <TextInput
+                style={styles.input}
+                value={customerMobile}
+                onChangeText={setCustomerMobile}
+                placeholder="e.g., 0123456789"
+                placeholderTextColor="#999"
+                keyboardType="numeric"
+                maxLength={10}
               />
             </View>
 
@@ -181,76 +258,5 @@ const OSFSmsScreen = () => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#f0f2f5",
-    padding: 20,
-    justifyContent: "center",
-  },
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#555",
-    marginBottom: 6,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    display: "flex",
-  },
-  button: {
-    backgroundColor: "#9C1D1D",
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  offenceList: {
-    marginVertical: 10,
-  },
-  offenceItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "30%",
-    marginVertical: 6,
-    marginRight: 10,
-  },
-  offenceItemSelected: {
-    backgroundColor: "#f9eaea",
-    borderRadius: 8,
-    padding: 4,
-  },
-  offenceText: {
-    marginLeft: 6,
-    color: "#333",
-    fontSize: 14,
-  },
-});
 
 export default OSFSmsScreen;
