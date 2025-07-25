@@ -119,15 +119,33 @@ const DeliveryScreen = () => {
     }
   };
 
-  const handleRemove = async (index) => {
-    const removedBarcode = barcodes[index].value;
-    const updated = [...barcodes];
-    updated.splice(index, 1);
-    setBarcodes(updated);
+  const handleRemove = (index) => {
+    const barcodeToRemove = barcodes[index].value;
 
-    const stored = await loadBarcodes();
-    const newStored = stored.filter((b) => b.value !== removedBarcode);
-    await storeBarcodes(newStored);
+    Alert.alert(
+      "Confirm Delete",
+      `Are you sure you want to delete barcode: ${barcodeToRemove}?`,
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          style: "destructive",
+          onPress: async () => {
+            const updated = [...barcodes];
+            updated.splice(index, 1);
+            setBarcodes(updated);
+
+            const stored = await loadBarcodes();
+            const newStored = stored.filter((b) => b.value !== barcodeToRemove);
+            await storeBarcodes(newStored);
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleSend = async () => {

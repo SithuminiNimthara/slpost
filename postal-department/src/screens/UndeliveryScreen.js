@@ -144,9 +144,28 @@ const UndeliveryScreen = () => {
   };
 
   const handleRemove = (index) => {
-    const updated = [...barcodes];
-    updated.splice(index, 1);
-    setBarcodes(updated);
+    const barcodeToRemove = barcodes[index].value;
+
+    Alert.alert(
+      "Confirm Delete",
+      `Are you sure you want to delete barcode: ${barcodeToRemove}?`,
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          style: "destructive",
+          onPress: () => {
+            const updated = [...barcodes];
+            updated.splice(index, 1);
+            setBarcodes(updated);
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleSend = async () => {
