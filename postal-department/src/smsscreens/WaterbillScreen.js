@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -12,20 +11,22 @@ import {
   Keyboard,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { sendSms } from "../utils/sendEcounterSms";
+import styles from "../styles/smswaterbillStyles";
 
-// Format input as XX/XXX/XXX/XX (13 digits with slashes)
+// Format input as 12/14/123/345/12
 const formatAccountNumber = (value) => {
-  const digits = value.replace(/\D/g, "").slice(0, 13);
-  let formatted = "";
-  for (let i = 0; i < digits.length; i++) {
-    formatted += digits[i];
-    if ([1, 4, 7].includes(i) && i !== digits.length - 1) {
-      formatted += "/";
-    }
-  }
-  return formatted;
+  const digits = value.replace(/\D/g, "").slice(0, 12);
+  const parts = [
+    digits.slice(0, 2),
+    digits.slice(2, 4),
+    digits.slice(4, 7),
+    digits.slice(7, 10),
+    digits.slice(10, 12),
+  ];
+  return parts.filter(Boolean).join("/");
 };
 
 const WaterBillSmsScreen = () => {
@@ -35,61 +36,104 @@ const WaterBillSmsScreen = () => {
   const [mobileNo, setMobileNo] = useState("");
   const [replyMsg, setReplyMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const acctInputRef = useRef(null);
 
+  const isAcctMatching =
+    acct.replace(/\D/g, "") === confirmAcct.replace(/\D/g, "");
+
+  const totalWithCharge =
+    amount && !isNaN(amount) && Number(amount) >= 21
+      ? (Number(amount) + 20).toFixed(2)
+      : null;
+
+  // 🔍 Handle Search Button
+  const handleSearch = async () => {
+    const rawAcct = acct.replace(/\D/g, "");
+    const rawConfirmAcct = confirmAcct.replace(/\D/g, "");
+
+    if (!rawAcct || !rawConfirmAcct) {
+      return alert("Please enter and confirm account number.");
+    }
+
+    if (rawAcct.length !== 12) {
+      return alert("Account Number must contain exactly 12 digits.");
+    }
+
+    if (rawAcct !== rawConfirmAcct) {
+      return alert("Account numbers do not match.");
+    }
+
+    try {
+      setLoading(true);
+      setReplyMsg("");
+
+      const response = await sendSms("wbi", {
+        acct: rawAcct,
+      });
+
+      if (response?.status === "success") {
+        setReplyMsg(response.fullMessage);
+      } else {
+        setReplyMsg("SMS sent but no reply received.");
+      }
+    } catch (error) {
+      setReplyMsg(error.message || "Failed to send SMS.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Handle Submit Button
   const handleSubmit = async () => {
     const rawAcct = acct.replace(/\D/g, "");
     const rawConfirmAcct = confirmAcct.replace(/\D/g, "");
 
     if (!rawAcct || !rawConfirmAcct || !amount || !mobileNo) {
-      Alert.alert("Error", "All fields are required.");
-      return;
+      return alert("All fields are required.");
     }
 
-    if (rawAcct.length !== 10) {
-      Alert.alert("Error", "Account Number must contain exactly 10 digits.");
-      return;
+    if (rawAcct.length !== 12) {
+      return alert("Account Number must contain exactly 12 digits.");
     }
 
     if (rawAcct !== rawConfirmAcct) {
-      Alert.alert("Error", "Account numbers do not match.");
-      return;
+      return alert("Account numbers do not match.");
     }
 
     if (!/^\d{10}$/.test(mobileNo)) {
-      Alert.alert("Error", "Mobile Number must be exactly 10 digits.");
-      return;
+      return alert("Mobile Number must be exactly 10 digits.");
     }
 
-    if (isNaN(amount) || Number(amount) <= 0) {
-      Alert.alert("Error", "Amount must be a positive number.");
-      return;
+    const numAmount = Number(amount);
+    if (isNaN(numAmount)) {
+      return alert("Amount must be a number.");
+    }
+
+    if (numAmount < 21) {
+      return alert("Amount must be at least Rs. 21.");
     }
 
     try {
-      setLoading(true); // Start loading
+      setLoading(true);
+      setReplyMsg("");
 
       const response = await sendSms("water", {
-        acct: rawAcct,
-        amount,
+        acct: rawConfirmAcct,
+        amount: totalWithCharge ? Number(totalWithCharge) : null,
         mobileNo,
       });
 
       if (response?.status === "success") {
-        setReplyMsg(response.fullMessage); // store the reply
-        Alert.alert("Reply from 1919", response.fullMessage);
+        setReplyMsg(response.fullMessage);
       } else {
-        Alert.alert("Error", "SMS sent but no reply received.");
+        setReplyMsg("SMS sent but no reply received.");
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to send SMS.");
+      setReplyMsg(error.message || "Failed to send SMS.");
     } finally {
-      setLoading(false); // Stop loading regardless of success/failure
+      setLoading(false);
     }
-  };
-
-  const handleViewDetails = () => {
-    Alert.alert("Info", "Here you can show account details or redirect.");
-    // You can navigate to another screen or show a modal here
   };
 
   return (
@@ -104,67 +148,105 @@ const WaterBillSmsScreen = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.card}>
+            {/* Account Number */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Account Number</Text>
               <TextInput
+                ref={acctInputRef}
                 style={styles.input}
                 value={acct}
                 onChangeText={(text) => setAcct(formatAccountNumber(text))}
-                placeholder="e.g., 12/234/234/56"
+                placeholder="e.g., 12/14/123/345/12"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
-                maxLength={13}
+                maxLength={16}
+                secureTextEntry={isConfirming}
               />
             </View>
 
+            {/* Confirm Account Number */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirm Account Number</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  confirmAcct.length === 16 &&
+                    !isAcctMatching &&
+                    styles.inputError,
+                ]}
                 value={confirmAcct}
                 onChangeText={(text) =>
                   setConfirmAcct(formatAccountNumber(text))
                 }
-                placeholder="e.g., 12/234/234/56"
+                onFocus={() => setIsConfirming(true)}
+                onBlur={() => setIsConfirming(false)}
+                placeholder="e.g., 12/14/123/345/12"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
-                maxLength={13}
+                maxLength={16}
               />
 
-              {/* View Details Button */}
-              <TouchableOpacity
-                style={styles.viewDetailsBtn}
-                onPress={handleViewDetails}
-              >
-                <Text style={styles.viewDetailsText}>View Details</Text>
-              </TouchableOpacity>
+              {!isAcctMatching && confirmAcct.length === 16 && (
+                <Text style={styles.matchWarning}>
+                  Account numbers do not match.
+                </Text>
+              )}
+
+              {/* Search button aligned to the right side */}
+              <View style={styles.searchButtonWrapper}>
+                <TouchableOpacity
+                  style={styles.searchButtonSmall}
+                  onPress={handleSearch}
+                  disabled={loading}
+                >
+                  <Text style={styles.searchButtonText}>Search</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
+            {/* Amount + Total */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Amount (Rs)</Text>
-              <TextInput
-                style={styles.input}
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="e.g., 1200"
-                placeholderTextColor="#999"
-                keyboardType="numeric"
-              />
+              <View style={styles.amountRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginRight: 10 }]}
+                  value={amount}
+                  onChangeText={setAmount}
+                  placeholder="e.g., 100"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                  editable={!!replyMsg}
+                />
+                {totalWithCharge && (
+                  <View style={styles.totalBox}>
+                    <Text style={styles.totalLabel}>Total</Text>
+                    <Text style={styles.totalValue}>Rs. {totalWithCharge}</Text>
+                  </View>
+                )}
+              </View>
+              {amount !== "" && !isNaN(amount) && Number(amount) < 21 && (
+                <Text style={styles.maxAmountWarning}>
+                  Amount must be at least Rs. 21.
+                </Text>
+              )}
             </View>
 
+            {/* Mobile Number */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Mobile Number</Text>
               <TextInput
                 style={styles.input}
                 value={mobileNo}
                 onChangeText={setMobileNo}
-                placeholder="e.g., 0771234567"
+                placeholder="e.g., 07XXXXXXXX"
                 placeholderTextColor="#999"
                 keyboardType="phone-pad"
                 maxLength={10}
+                editable={!!replyMsg}
               />
             </View>
 
+            {/* Spinner */}
             {loading && (
               <View style={styles.spinnerContainer}>
                 <ActivityIndicator size="large" color="#9C1D1D" />
@@ -172,6 +254,7 @@ const WaterBillSmsScreen = () => {
               </View>
             )}
 
+            {/* Send SMS */}
             <TouchableOpacity
               style={[styles.button, loading && { opacity: 0.6 }]}
               onPress={handleSubmit}
@@ -180,6 +263,7 @@ const WaterBillSmsScreen = () => {
               <Text style={styles.buttonText}>Send SMS</Text>
             </TouchableOpacity>
 
+            {/* Reply Message */}
             {replyMsg !== "" && (
               <View style={styles.replyBox}>
                 <Text style={styles.replyTitle}>Reply from 1919:</Text>
@@ -192,98 +276,5 @@ const WaterBillSmsScreen = () => {
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#f0f2f5",
-    padding: 20,
-    justifyContent: "center",
-  },
-  card: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#555",
-    marginBottom: 6,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#222",
-  },
-  button: {
-    backgroundColor: "#9C1D1D",
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  viewDetailsBtn: {
-    marginTop: 8,
-    alignSelf: "flex-start",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  viewDetailsText: {
-    color: "#9C1D1D",
-    fontSize: 14,
-    fontWeight: "500",
-    textDecorationLine: "underline",
-    textAlign: "center",
-    marginTop: 4,
-  },
-  replyBox: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: "#914c4cff",
-    borderRadius: 10,
-    borderColor: "#9C1D1D",
-    borderWidth: 1,
-  },
-  replyTitle: {
-    fontWeight: "bold",
-    marginBottom: 6,
-    fontSize: 15,
-    color: "#fff",
-  },
-  replyText: {
-    fontSize: 15,
-    color: "#fff",
-  },
-  spinnerContainer: {
-    marginTop: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#555",
-  },
-});
 
 export default WaterBillSmsScreen;

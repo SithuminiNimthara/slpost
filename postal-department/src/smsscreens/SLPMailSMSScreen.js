@@ -28,6 +28,14 @@ const SLPMailSMS = ({ navigation }) => {
             <FontAwesome5 name="search" size={45} color="#9C1D1D" />
             <Text style={styles.gridText}> Tracking</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.gridItem}
+            onPress={() => navigation.navigate("SMSDelete")}
+          >
+            <FontAwesome5 name="trash" size={45} color="#9C1D1D" />
+            <Text style={styles.gridText}>Delete</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.gridItem}
             onPress={() => navigation.navigate("SMSReport")}

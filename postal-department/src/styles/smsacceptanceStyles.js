@@ -68,11 +68,11 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   replyContainer: {
-    backgroundColor: "#FBEAEA", // very light red background
+    backgroundColor: "#FDECEA", // very light red background
     padding: 15,
     marginTop: 20,
     borderRadius: 10,
-    borderColor: "#9C1D1D",
+    borderColor: "#f5c6cb",
     borderWidth: 1,
   },
   replyTitle: {
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   replyText: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#333",
+    color: "#9C1D1D", //
   },
 });
 

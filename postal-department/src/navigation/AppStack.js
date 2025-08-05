@@ -4,7 +4,6 @@ import Dashboard from "../screens/HomeScreen";
 import SLPMail from "../screens/SLPMailScreen";
 import TrackItem from "../screens/TrackItemScreen";
 import AcceptanceForm from "../screens/AcceptanceFormScreen";
-import Settings from "../screens/SettingScreen";
 import HeaderRight from "../components/HeaderRight";
 import Delivery from "../screens/DeliveryScreen";
 import Undelivery from "../screens/UndeliveryScreen";
@@ -31,8 +30,6 @@ export default function AppStack() {
           headerRight: () => <HeaderRight />,
         }}
       />
-
-     
 
       <Stack.Screen
         name="SLPMail"
@@ -94,16 +91,6 @@ export default function AppStack() {
           headerRight: () => <HeaderRight />,
         }}
       />
-
-      <Stack.Screen
-        name="Settings"
-        component={Settings}
-        options={{
-          title: "Settings",
-          headerRight: () => <HeaderRight />,
-        }}
-      />
-
     </Stack.Navigator>
   );
 }

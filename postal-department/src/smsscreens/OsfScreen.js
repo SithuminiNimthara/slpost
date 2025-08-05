@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -17,6 +16,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import OffenceMap from "../components/OffenceMap";
 import { OFFENCE_VALUES } from "../utils/offenceMap";
 import styles from "../styles/smsosfStyles";
+import { sendSms } from "../utils/sendEcounterSms"; // your SMS logic
 
 const OSFSmsScreen = () => {
   const [drivingLicenseNo, setdrivingLicenseNo] = useState("");
@@ -26,6 +26,7 @@ const OSFSmsScreen = () => {
   const [totalAmount, setTotalAmount] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [replyMessage, setReplyMessage] = useState(null);
 
   useEffect(() => {
     const calculateTotalWithCharge = () => {
@@ -34,9 +35,7 @@ const OSFSmsScreen = () => {
         0
       );
 
-      if (!offenceDate) {
-        return baseTotal.toString();
-      }
+      if (!offenceDate) return baseTotal.toString();
 
       const offence = new Date(`${new Date().getFullYear()}-${offenceDate}`);
       const today = new Date();
@@ -52,7 +51,6 @@ const OSFSmsScreen = () => {
         const total = doubled + 0.1 * doubled;
         return Math.round(total).toString();
       } else {
-        // Outside allowed range — fallback
         return baseTotal.toString();
       }
     };
@@ -70,6 +68,8 @@ const OSFSmsScreen = () => {
   };
 
   const handleSubmit = async () => {
+    setReplyMessage(null);
+
     if (
       !drivingLicenseNo ||
       selectedOffences.length === 0 ||
@@ -78,19 +78,27 @@ const OSFSmsScreen = () => {
       !totalAmount ||
       !customerMobile
     ) {
-      Alert.alert("Error", "All fields are required.");
+      setReplyMessage({
+        status: "error",
+        fullMessage: "All fields are required.",
+        timestamp: new Date().toLocaleString(),
+      });
       return;
     }
 
     if (isNaN(totalAmount) || Number(totalAmount) <= 0) {
-      Alert.alert("Error", "Total amount must be a valid positive number.");
+      setReplyMessage({
+        status: "error",
+        fullMessage: "Total amount must be a valid positive number.",
+        timestamp: new Date().toLocaleString(),
+      });
       return;
     }
 
     const offences = selectedOffences.join(",");
 
     try {
-      await sendSms("osf", {
+      const reply = await sendSms("osf", {
         drivingLicenseNo,
         offences,
         offenceDate,
@@ -99,9 +107,13 @@ const OSFSmsScreen = () => {
         mobile: customerMobile,
       });
 
-      Alert.alert("Success", "SMS sent. Awaiting reply.");
+      setReplyMessage(reply);
     } catch (error) {
-      Alert.alert("Error", "Failed to send SMS.");
+      setReplyMessage({
+        status: "error",
+        fullMessage: error.message || "Failed to send or receive SMS.",
+        timestamp: new Date().toLocaleString(),
+      });
     }
   };
 
@@ -114,10 +126,11 @@ const OSFSmsScreen = () => {
         const formatted = format(selectedDate, "MM-dd");
         setOffenceDate(formatted);
       } else {
-        Alert.alert(
-          "Invalid Date",
-          "Only dates within the past 28 days are allowed."
-        );
+        setReplyMessage({
+          status: "error",
+          fullMessage: "Only dates within the past 28 days are allowed.",
+          timestamp: new Date().toLocaleString(),
+        });
       }
     }
   };
@@ -126,11 +139,11 @@ const OSFSmsScreen = () => {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.card}>
+            {/* Driving License */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Driving License Number</Text>
               <TextInput
@@ -143,24 +156,23 @@ const OSFSmsScreen = () => {
               />
             </View>
 
+            {/* Offence Selection */}
             <Text style={[styles.label, { marginTop: 16 }]}>
               Select Offence Number(s)
             </Text>
-
             <OffenceMap
               selectedOffences={selectedOffences}
               onToggle={toggleOffence}
             />
 
+            {/* Offence Date */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Offence Date (MM-DD)</Text>
               <TouchableOpacity
                 style={styles.input}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Text
-                  style={{ color: offenceDate ? "#222" : "#999", fontSize: 16 }}
-                >
+                <Text style={{ color: offenceDate ? "#222" : "#999", fontSize: 16 }}>
                   {offenceDate || "Select date"}
                 </Text>
               </TouchableOpacity>
@@ -176,6 +188,7 @@ const OSFSmsScreen = () => {
               )}
             </View>
 
+            {/* Police Code */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Police Code</Text>
               <TextInput
@@ -189,6 +202,7 @@ const OSFSmsScreen = () => {
               />
             </View>
 
+            {/* Total Amount */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Total Amount (Rs)</Text>
               <TextInput
@@ -199,59 +213,65 @@ const OSFSmsScreen = () => {
                 placeholderTextColor="#999"
                 keyboardType="numeric"
               />
-              {/* Show breakdown if offences selected */}
               {selectedOffences.length > 0 && totalAmount && (
                 <Text style={styles.breakdownText}>
                   {(() => {
-                    const baseTotal = selectedOffences.reduce(
+                    const base = selectedOffences.reduce(
                       (sum, id) => sum + (OFFENCE_VALUES[id] || 0),
                       0
                     );
                     const total = parseFloat(totalAmount);
-                    const diff = total - baseTotal;
-
-                    const offence = new Date(
-                      `${new Date().getFullYear()}-${offenceDate}`
-                    );
+                    const diff = total - base;
+                    const offence = new Date(`${new Date().getFullYear()}-${offenceDate}`);
                     const today = new Date();
                     const diffInDays = Math.ceil(
                       Math.abs(today - offence) / (1000 * 60 * 60 * 24)
                     );
 
                     if (diffInDays <= 14) {
-                      return `Base: Rs ${baseTotal} + Fee: Rs ${Math.round(
-                        0.1 * baseTotal
-                      )} (10% late fee)`;
+                      return `Base: Rs ${base} + 10% Late Fee = Rs ${Math.round(0.1 * base)}`;
                     } else if (diffInDays <= 28) {
-                      const doubled = baseTotal * 2;
-                      const extra = 0.1 * doubled;
-                      return `Base x2: Rs ${doubled} + Fee: Rs ${Math.round(
-                        extra
-                      )} (10% on doubled)`;
+                      const doubled = base * 2;
+                      return `Base x2: Rs ${doubled} + 10% Fee = Rs ${Math.round(0.1 * doubled)}`;
                     } else {
-                      return `Base: Rs ${baseTotal}`;
+                      return `Base: Rs ${base}`;
                     }
                   })()}
                 </Text>
               )}
             </View>
 
+            {/* Mobile No */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Customer Mobile Number</Text>
               <TextInput
                 style={styles.input}
                 value={customerMobile}
                 onChangeText={setCustomerMobile}
-                placeholder="e.g., 0123456789"
+                placeholder="e.g., 0712345678"
                 placeholderTextColor="#999"
-                keyboardType="numeric"
+                keyboardType="phone-pad"
                 maxLength={10}
               />
             </View>
 
+            {/* Submit */}
             <TouchableOpacity style={styles.button} onPress={handleSubmit}>
               <Text style={styles.buttonText}>Send SMS</Text>
             </TouchableOpacity>
+
+            {/* Reply Box */}
+            {replyMessage && (
+              <View style={styles.replyBox}>
+                <Text style={styles.replyTitle}>
+                  Reply from 1919 ({replyMessage.status}):
+                </Text>
+                <Text style={styles.replyText}>{replyMessage.fullMessage}</Text>
+                <Text style={styles.replyTime}>
+                  {replyMessage.timestamp}
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>

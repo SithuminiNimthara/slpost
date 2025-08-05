@@ -14,6 +14,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { sendSms } from "../utils/sendEcounterSms";
+import styles from "../styles/smskmcStyles";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const KmcSmsScreen = () => {
   const [paymentType, setPaymentType] = useState("assessment");
@@ -24,6 +26,28 @@ const KmcSmsScreen = () => {
   const [amount, setAmount] = useState("");
   const [customerMobileNo, setCustomerMobileNo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isConfirmingTaxNo, setIsConfirmingTaxNo] = useState(false);
+  const [isConfirmingAcctNo, setIsConfirmingAcctNo] = useState(false);
+  const [replyMessage, setReplyMessage] = useState(null);
+
+  // Check mismatches depending on payment type
+  const taxNoMismatch =
+    paymentType === "assessment" &&
+    taxNo &&
+    confirmTaxNo &&
+    taxNo !== confirmTaxNo;
+
+  const acctNoMismatch =
+    paymentType === "waterbill" &&
+    acctNo &&
+    confirmAcctNo &&
+    acctNo !== confirmAcctNo;
+
+  // Calculate total amount with Rs. 20 charge
+  const totalWithCharge =
+    amount && !isNaN(amount) && Number(amount) > 0
+      ? (Number(amount) + 20).toFixed(2)
+      : null;
 
   const handleSubmit = async () => {
     if (
@@ -36,13 +60,8 @@ const KmcSmsScreen = () => {
       return;
     }
 
-    if (paymentType === "assessment" && taxNo.trim() !== confirmTaxNo.trim()) {
-      Alert.alert("Error", "Tax numbers do not match.");
-      return;
-    }
-
-    if (paymentType === "waterbill" && acctNo.trim() !== confirmAcctNo.trim()) {
-      Alert.alert("Error", "Account numbers do not match.");
+    if (taxNoMismatch || acctNoMismatch) {
+      Alert.alert("Error", "Account or Tax numbers do not match.");
       return;
     }
 
@@ -59,7 +78,7 @@ const KmcSmsScreen = () => {
     try {
       setLoading(true);
       let payload = {
-        amount,
+        amount: totalWithCharge ? Number(totalWithCharge) : null,
         customerMobileNo,
       };
 
@@ -67,18 +86,18 @@ const KmcSmsScreen = () => {
 
       if (paymentType === "assessment") {
         smsType = "kmc_assessment";
-        payload.taxNo = taxNo;
+        payload.taxNo = confirmTaxNo; // use confirmed value
       } else if (paymentType === "waterbill") {
         smsType = "kmc_waterbill";
-        payload.acctNo = acctNo;
+        payload.acctNo = confirmAcctNo; // use confirmed value
       }
 
       const response = await sendSms(smsType, payload);
 
       if (response?.status === "success") {
-        Alert.alert("Reply from 1919", response.fullMessage);
+        setReplyMessage(response.fullMessage); // Store the reply
       } else {
-        Alert.alert("Error", "SMS sent but no reply received.");
+        setReplyMessage("SMS sent but no reply received.");
       }
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to send SMS.");
@@ -134,6 +153,7 @@ const KmcSmsScreen = () => {
 
             {paymentType === "assessment" ? (
               <>
+                {/* Tax Number Input */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Tax No</Text>
                   <TextInput
@@ -142,21 +162,38 @@ const KmcSmsScreen = () => {
                     onChangeText={setTaxNo}
                     placeholder="Enter Tax Number"
                     placeholderTextColor="#999"
+                    maxLength={10}
+                    secureTextEntry={isConfirmingTaxNo}
                   />
                 </View>
+
+                {/* Confirm Tax Number Input with blur */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Confirm Tax No</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input,
+                      taxNoMismatch ? styles.inputError : null,
+                    ]}
                     value={confirmTaxNo}
-                    onChangeText={setConfirmTaxNo}
+                    onChangeText={(text) => setConfirmTaxNo(text)}
                     placeholder="Re-enter Tax Number"
                     placeholderTextColor="#999"
+                    maxLength={10}
+                    onFocus={() => setIsConfirmingTaxNo(true)}
+                    onBlur={() => setIsConfirmingTaxNo(false)}
+                    secureTextEntry={isConfirmingTaxNo}
                   />
+                  {taxNoMismatch && confirmTaxNo.length > 0 && (
+                    <Text style={styles.matchWarning}>
+                      Tax numbers do not match.
+                    </Text>
+                  )}
                 </View>
               </>
             ) : (
               <>
+                {/* Account Number Input */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Account No</Text>
                   <TextInput
@@ -165,46 +202,73 @@ const KmcSmsScreen = () => {
                     onChangeText={setAcctNo}
                     placeholder="Enter Account Number"
                     placeholderTextColor="#999"
+                    maxLength={10}
+                    secureTextEntry={isConfirmingAcctNo}
                   />
                 </View>
+
+                {/* Confirm Account Number Input with blur */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Confirm Account No</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input,
+                      acctNoMismatch ? styles.inputError : null,
+                    ]}
                     value={confirmAcctNo}
-                    onChangeText={setConfirmAcctNo}
+                    onChangeText={(text) => setConfirmAcctNo(text)}
                     placeholder="Re-enter Account Number"
                     placeholderTextColor="#999"
+                    maxLength={10}
+                    onFocus={() => setIsConfirmingAcctNo(true)}
+                    onBlur={() => setIsConfirmingAcctNo(false)}
+                    secureTextEntry={isConfirmingAcctNo}
                   />
+                  {acctNoMismatch && confirmAcctNo.length > 0 && (
+                    <Text style={styles.matchWarning}>
+                      Account numbers do not match.
+                    </Text>
+                  )}
                 </View>
               </>
             )}
 
+            {/* Amount + Total Row */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Amount (Rs)</Text>
-              <TextInput
-                style={styles.input}
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="e.g., 2500"
-                placeholderTextColor="#999"
-                keyboardType="numeric"
-              />
+              <View style={styles.amountRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginRight: 10 }]}
+                  value={amount}
+                  onChangeText={setAmount}
+                  placeholder="e.g., 2500"
+                  placeholderTextColor="#999"
+                  keyboardType="numeric"
+                />
+                {totalWithCharge && (
+                  <View style={styles.totalBox}>
+                    <Text style={styles.totalLabel}>Total</Text>
+                    <Text style={styles.totalValue}>Rs. {totalWithCharge}</Text>
+                  </View>
+                )}
+              </View>
             </View>
 
+            {/* Customer Mobile Number */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Customer Mobile No</Text>
               <TextInput
                 style={styles.input}
                 value={customerMobileNo}
                 onChangeText={setCustomerMobileNo}
-                placeholder="e.g., 0771234567"
+                placeholder="e.g., 07XXXXXXXXX"
                 placeholderTextColor="#999"
                 keyboardType="phone-pad"
                 maxLength={10}
               />
             </View>
 
+            {/* Loading Indicator */}
             {loading && (
               <View style={styles.spinnerContainer}>
                 <ActivityIndicator size="large" color="#9C1D1D" />
@@ -212,103 +276,27 @@ const KmcSmsScreen = () => {
               </View>
             )}
 
+            {/* Submit Button */}
             <TouchableOpacity
-              style={styles.button}
+              style={[styles.button, loading && { opacity: 0.6 }]}
               onPress={handleSubmit}
               disabled={loading}
             >
               <Text style={styles.buttonText}>Send SMS</Text>
             </TouchableOpacity>
+
+            {/* Show Reply Message as Card Below the Button */}
+            {replyMessage && (
+              <View style={styles.replyCard}>
+                <Text style={styles.replyTitle}>Reply Message</Text>
+                <Text style={styles.replyText}>{replyMessage}</Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#f0f2f5",
-    padding: 20,
-    justifyContent: "center",
-  },
-  card: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#555",
-    marginBottom: 6,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#222",
-  },
-  button: {
-    backgroundColor: "#9C1D1D",
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
-    borderRadius: 8,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: "#f4f4f4",
-    alignItems: "center",
-  },
-  toggleActive: {
-    backgroundColor: "#9C1D1D",
-  },
-  toggleText: {
-    fontSize: 15,
-    color: "#333",
-  },
-  toggleTextActive: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  spinnerContainer: {
-    marginTop: 16,
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#555",
-  },
-});
 
 export default KmcSmsScreen;

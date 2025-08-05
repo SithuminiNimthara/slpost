@@ -60,6 +60,16 @@ export const sendSms = async (type, params = {}) => {
       break;
     }
 
+    case "slpe": {
+      const { barcode } = params;
+      if (!barcode) {
+        Alert.alert("Error", "Barcode number is required!");
+        return;
+      }
+      message = `pec slpe ${barcode}`;
+      break;
+    }
+
     case "slpr": {
       const { reportType, date, startDate, endDate } = params;
 

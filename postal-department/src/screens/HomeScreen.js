@@ -34,13 +34,6 @@ const Dashboard = ({ navigation }) => {
             <FontAwesome5 name="cogs" size={45} color="#9C1D1D" />
             <Text style={styles.gridText}>Operations</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.gridItem}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <FontAwesome5 name="wrench" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>Settings</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </View>

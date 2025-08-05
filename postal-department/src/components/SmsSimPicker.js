@@ -43,7 +43,11 @@ const SmsSimPicker = () => {
           style={styles.picker}
         >
           {simOptions.map((sim, index) => (
-            <Picker.Item key={index} label={sim.carrierName} value={sim.slotIndex} />
+            <Picker.Item
+              key={index}
+              label={sim.carrierName}
+              value={sim.slotIndex}
+            />
           ))}
         </Picker>
       ) : (

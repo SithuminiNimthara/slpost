@@ -9,21 +9,21 @@ import {
 } from "react-native";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import BarcodeInput from "../components/BarcodeInput";
-import { sendSms } from "../utils/sendSLPMailSms";
+import { sendSms } from "../utils/sendSLPMailSms"; // Make sure this supports delete action
 
-const SmsTrackingScreen = () => {
+const SmsDeleteScreen = () => {
   const [barcode, setBarcode] = useState("");
   const [messages, setMessages] = useState([]);
   const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const parseTrackingSms = (smsText) => {
+  const parseDeleteSms = (smsText) => {
     return {
       fullMessage: smsText,
     };
   };
 
-  const handleSendTrackingRequest = async () => {
+  const handleSendDeleteRequest = async () => {
     const trimmedBarcode = barcode.trim().toUpperCase();
 
     if (!trimmedBarcode) {
@@ -34,12 +34,12 @@ const SmsTrackingScreen = () => {
     setLoading(true);
 
     try {
-      const trackingSms = await sendSms("slpt", {
+      const response = await sendSms("slpe", {
         barcode: trimmedBarcode,
       });
 
-      if (trackingSms && trackingSms.fullMessage) {
-        const parsedData = parseTrackingSms(trackingSms.fullMessage);
+      if (response && response.fullMessage) {
+        const parsedData = parseDeleteSms(response.fullMessage);
 
         setMessages((prev) => [
           ...prev,
@@ -51,14 +51,11 @@ const SmsTrackingScreen = () => {
           },
         ]);
       } else {
-        Alert.alert("No Response", "Could not parse tracking response.");
+        Alert.alert("No Response", "Could not parse delete confirmation.");
       }
     } catch (error) {
-      console.error("Tracking Error:", error.message);
-      Alert.alert(
-        "Error",
-        error.message || "Failed to get tracking information."
-      );
+      console.error("Delete Error:", error.message);
+      Alert.alert("Error", error.message || "Failed to send delete request.");
     } finally {
       setLoading(false);
     }
@@ -70,13 +67,16 @@ const SmsTrackingScreen = () => {
         barcode={barcode}
         setBarcode={setBarcode}
         onScan={() => setScanning(true)}
-        onTrack={handleSendTrackingRequest}
+        onTrack={handleSendDeleteRequest}
+        buttonLabel="Delete"
       />
 
       {loading && (
         <View style={styles.spinnerContainer}>
           <ActivityIndicator size="large" color="#9C1D1D" />
-          <Text style={styles.loadingText}>Waiting for SMS reply...</Text>
+          <Text style={styles.loadingText}>
+            Waiting for SMS confirmation...
+          </Text>
         </View>
       )}
 
@@ -142,4 +142,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SmsTrackingScreen;
+export default SmsDeleteScreen;

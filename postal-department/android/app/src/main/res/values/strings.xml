@@ -1,5 +1,5 @@
 <resources>
-  <string name="app_name">postal-department</string>
+  <string name="app_name">EC Post</string>
   <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
   <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
 </resources>

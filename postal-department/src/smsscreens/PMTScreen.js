@@ -2,40 +2,33 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
-const SMSMenuScreen = ({ navigation }) => {
+const PMTSMS = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.gridContainer}>
           <TouchableOpacity
             style={styles.gridItem}
-            onPress={() => navigation.navigate("SLPMailSMS")}
+            onPress={() => navigation.navigate("PMTAccept")}
           >
-            <FontAwesome5 name="envelope" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>SLP Mail</Text>
+            <FontAwesome5 name="inbox" size={45} color="#9C1D1D" />
+            <Text style={styles.gridText}>Accept</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.gridItem}
-            onPress={() => navigation.navigate("SMSECounter")}
-          >
-            <FontAwesome5 name="desktop" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>E Counter</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.gridItem}
-            onPress={() => navigation.navigate("SMSEPay")}
+            onPress={() => navigation.navigate("PMTPayment")}
           >
             <FontAwesome5 name="money-check-alt" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>E Pay</Text>
+            <Text style={styles.gridText}>Payment</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.gridItem}
-            onPress={() => navigation.navigate("Settings")}
+            onPress={() => navigation.navigate("PMTDelete")}
           >
-            <FontAwesome5 name="wrench" size={45} color="#9C1D1D" />
-            <Text style={styles.gridText}>Settings</Text>
+            <FontAwesome5 name="trash-alt" size={45} color="#9C1D1D" />
+            <Text style={styles.gridText}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -81,8 +74,9 @@ const styles = StyleSheet.create({
   gridText: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#9C1D1D",
+    color: "#333",
+    marginTop: 8,
   },
 });
 
-export default SMSMenuScreen;
+export default PMTSMS;

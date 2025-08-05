@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -13,34 +12,32 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { sendSms } from "../utils/sendEcounterSms"; // Keep this path as per your structure
-
+import { sendSms } from "../utils/sendEcounterSms";
+import styles from "../styles/smssltStyles"; // your main style
 const SltsmsScreen = () => {
   const [sltNumber, setSltNumber] = useState("");
   const [confirmSltNumber, setConfirmSltNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [contactNumber, setContactNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [replyMessage, setReplyMessage] = useState(null); // <-- new state
 
   const handleSubmit = async () => {
+    setReplyMessage(null); // clear old message
     if (!sltNumber || !confirmSltNumber || !amount || !contactNumber) {
-      Alert.alert("Error", "All fields are required.");
-      return;
+      return alert("All fields are required.");
     }
 
     if (sltNumber !== confirmSltNumber) {
-      Alert.alert("Error", "SLT numbers do not match.");
-      return;
+      return alert("SLT numbers do not match.");
     }
 
     if (!/^\d{10}$/.test(contactNumber)) {
-      Alert.alert("Error", "Contact Number must be exactly 10 digits.");
-      return;
+      return alert("Contact Number must be exactly 10 digits.");
     }
 
     if (isNaN(amount) || Number(amount) <= 0) {
-      Alert.alert("Error", "Amount must be a positive number.");
-      return;
+      return alert("Amount must be a positive number.");
     }
 
     try {
@@ -52,12 +49,12 @@ const SltsmsScreen = () => {
       });
 
       if (response?.status === "success") {
-        Alert.alert("Reply from 1919", response.fullMessage);
+        setReplyMessage(response.fullMessage); // set reply to show below
       } else {
-        Alert.alert("Error", "SMS sent but no reply received.");
+        setReplyMessage("SMS sent but no reply received.");
       }
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to send SMS.");
+      setReplyMessage(error.message || "Failed to send SMS.");
     } finally {
       setLoading(false);
     }
@@ -75,6 +72,7 @@ const SltsmsScreen = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.card}>
+            {/* SLT Form Inputs */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>SLT Number</Text>
               <TextInput
@@ -84,6 +82,7 @@ const SltsmsScreen = () => {
                 placeholder="Enter mobile no or account no"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
+                maxLength={10}
               />
             </View>
 
@@ -96,6 +95,7 @@ const SltsmsScreen = () => {
                 placeholder="Re-enter mobile no or account no"
                 placeholderTextColor="#999"
                 keyboardType="numeric"
+                maxLength={10}
               />
             </View>
 
@@ -117,7 +117,7 @@ const SltsmsScreen = () => {
                 style={styles.input}
                 value={contactNumber}
                 onChangeText={setContactNumber}
-                placeholder="e.g., 0712345678"
+                placeholder="e.g., 07XXXXXXXXX"
                 placeholderTextColor="#999"
                 keyboardType="phone-pad"
                 maxLength={10}
@@ -139,88 +139,18 @@ const SltsmsScreen = () => {
               <Text style={styles.buttonText}>Send SMS</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Show Reply Message as a Card */}
+          {replyMessage && (
+            <View style={localStyles.messageCard}>
+              <Text style={localStyles.messageTitle}>Reply Message</Text>
+              <Text style={localStyles.messageText}>{replyMessage}</Text>
+            </View>
+          )}
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#f0f2f5",
-    padding: 20,
-    justifyContent: "center",
-  },
-  card: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#555",
-    marginBottom: 6,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#222",
-  },
-  button: {
-    backgroundColor: "#9C1D1D",
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  spinnerContainer: {
-    marginTop: 16,
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: "#555",
-  },
-  replyBox: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: "#914c4cff",
-    borderRadius: 10,
-    borderColor: "#9C1D1D",
-    borderWidth: 1,
-  },
-  replyTitle: {
-    fontWeight: "bold",
-    marginBottom: 6,
-    fontSize: 15,
-    color: "#fff",
-  },
-  replyText: {
-    fontSize: 15,
-    color: "#fff",
-  },
-});
 
 export default SltsmsScreen;

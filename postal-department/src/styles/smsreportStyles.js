@@ -65,7 +65,12 @@ const styles = StyleSheet.create({
     marginTop: 30,
     opacity: 0.9,
   },
-  responseLabel: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  responseLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#9C1D1D",
+  },
   responseText: { fontSize: 16, color: "#9C1D1D" },
 });
 

@@ -4,9 +4,6 @@ import SmsListener from "react-native-android-sms-listener";
 
 const SMS_GATEWAY = "1919";
 
-/**
- * Request SMS permissions.
- */
 const requestSmsPermissions = async () => {
   if (Platform.OS === "android") {
     const granted = await PermissionsAndroid.requestMultiple([
@@ -27,84 +24,42 @@ const requestSmsPermissions = async () => {
       return false;
     }
   }
-
   return true;
 };
 
-/**
- * Constructs message based on service type and parameters.
- */
-const constructMessage = (type, params) => {
-  switch (type) {
-    case "osf": {
-      const {
-        drivingLicenseNo,
-        offences,
-        offenceDate,
-        policeCode,
-        amount,
-        mobile,
-      } = params;
-      return `pec osf ${drivingLicenseNo} ${offences} ${offenceDate} ${policeCode} ${amount} ${mobile}`;
-    }
+const constructEpayMessage = (params) => {
+  const { pinNo, subType } = params;
 
-    case "wbi": {
-      const { acct } = params;
-      return `pec wbi ${acct}`;
-    }
+  switch (subType) {
+    case "MOBITEL": // post epay pinNo MB amount mobileNo
+      return `post epay ${pinNo} MB ${params.amount} ${params.mobileNo} `;
+    case "CEB": // post epay pinNo EB amount zone accountNo
+      return `post epay ${pinNo} EB ${params.amount} ${params.zone} ${params.accountNo}`;
 
-    case "water": {
-      const { acct, amount, mobileNo } = params;
-      return `pec wbp ${acct} ${amount} ${mobileNo}`;
-    }
-    case "kmc_assessment": {
-      const { taxNo, amount, customerMobileNo } = params;
-      return `pec kas ${taxNo} ${amount} ${customerMobileNo}`;
-    }
-    case "kmc_waterbill": {
-      const { acctNo, amount, customerMobileNo } = params;
-      return `pec kwb ${acctNo} ${amount} ${customerMobileNo}`;
-    }
-    case "cyl": {
-      const { policyNumber, nicLast6, amount, contactNumber } = params;
-      return `pec cyl ${policyNumber} ${nicLast6} ${amount} ${contactNumber}`;
-    }
-    case "slt": {
-      const { sltNumber, amount, contactNumber } = params;
-      return `pec slt ${sltNumber} ${amount} ${contactNumber}`;
-    }
-    case "exam": {
-      const { refNo, verificationCode, amount } = params;
-      return `pec slt ${refNo} ${verificationCode} ${amount}`;
-    }
-    case "rpt":
-    case "report": {
-      const { reportType, date, startDate, endDate } = params;
-      if (reportType === "daily") {
-        return "pec rpt";
-      } else if (reportType === "date") {
-        return `pec rpt ${date}`;
-      } else if (reportType === "range") {
-        return `pec rpt ${startDate} ${endDate}`;
-      } else {
-        throw new Error("Invalid report type");
-      }
-    }
+    case "PMT_ACCEPT": // post epay pinNo mmt amount RName SName
+      return `post epay ${pinNo} mmt ${params.amount} ${params.RName} ${params.SName}`;
+
+    case "PMT_PAYMENT": // post epay pinNo mmp PMTNo NIC
+      return `post epay ${pinNo} mmp ${params.PMTNo} ${params.NIC}`;
+
+    case "PMT_DELETE": // post epay pinNo com PMTNo reason
+      return `post epay ${pinNo} com ${params.PMTNo} ${params.reason}`;
+
+    case "REPORT": // post epay sum date range
+      return `post epay sum ${params.date} ${params.range}`;
+
     default:
-      throw new Error("Unknown SMS type");
+      throw new Error("Invalid epay subType");
   }
 };
 
-/**
- * Sends SMS and listens for a reply from 1919.
- */
-export const sendSms = async (type, params = {}) => {
+export const sendSms = async (params) => {
   const hasPermission = await requestSmsPermissions();
   if (!hasPermission) return;
 
   let message;
   try {
-    message = constructMessage(type, params);
+    message = constructEpayMessage(params);
   } catch (error) {
     Alert.alert("Error", error.message);
     return;
@@ -114,7 +69,7 @@ export const sendSms = async (type, params = {}) => {
     let listener;
 
     try {
-      // Start SMS listener for reply from 1919
+      // Listen for reply SMS from 1919
       listener = SmsListener.addListener((sms) => {
         if (sms?.originatingAddress?.includes("1919")) {
           const reply = {
